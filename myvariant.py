@@ -135,7 +135,7 @@ class MyVariantInfo():
         _url = self.url+'/metadata'
         return self._get(_url)
 
-    def getvariant(self, geneid, **kwargs):
+    def getVariant(self, geneid, **kwargs):
         '''Return the gene object for the give geneid.
         This is a wrapper for GET query of "/gene/<geneid>" service.
 
@@ -143,28 +143,16 @@ class MyVariantInfo():
                        a string or integer
         :param fields: fields to return, a list or a comma-separated string.
                         If **fields="all"**, all available fields are returned
-        :param species: optionally, you can pass comma-separated species names
-                        or taxonomy ids
-        :param email: optionally, pass your email to help us to track usage
-        :param filter: alias for **fields** parameter
-
-        :return: a gene object as a dictionary
-
-        :ref: http://mygene.info/doc/annotation_service.html for available
-             fields, extra *kwargs* and more.
 
         Example:
-
-        >>> mv.getvariant(1017, email='abc@example.com')
-        >>> mv.getvariant('1017', fields='symbol,name,entrezgene,refseq')
-        >>> mv.getvariant('1017', fields='symbol,name,entrezgene,refseq.rna')
-        >>> mv.getvariant('1017', fields=['symbol', 'name', 'pathway.kegg'])
-        >>> mv.getvariant('ENSG00000123374', fields='all')
+        >>> mv.getvariant('chr1:g.35367G>A', fields='dbnsfp.genename')
+        >>> mv.getvariant('chr1:g.35367G>A', fields=['dbnsfp.genename', 'cadd.phred'])
+        >>> mv.getvariant('chr1:g.35367G>A', fields='all')
 
         .. Hint:: The supported field names passed to **fields** parameter can be found from
-                  any full gene object (when **fields="all"**). Note that field name supports dot
-                  notation for nested data structure as well, e.g. you can pass "refseq.rna" or
-                  "pathway.kegg".
+                  any full variant object (when **fields="all"**). Note that field name supports dot
+                  notation for nested data structure as well, e.g. you can pass "dbnsfp.genename" or
+                  "cadd.phred".
         '''
         #if fields:
         #    kwargs['fields'] = self._format_list(fields)
@@ -179,14 +167,13 @@ class MyVariantInfo():
         _url = self.url + '/variant/'
         return self._post(_url, _kwargs)
 
-    def getvariants(self, ids, fields=None, **kwargs):
+    def getVariants(self, ids, fields=None, **kwargs):
         '''Return the list of gene objects for the given list of geneids.
         This is a wrapper for POST query of "/gene" service.
 
         :param ids: a list or comm-sep HGVS ids
         :param fields: fields to return, a list or a comma-separated string.
                         If **fields="all"**, all available fields are returned
-        :param email: optionally, pass your email to help us to track usage
         :param dataframe: return object as DataFrame (requires Pandas).
         :param df_index: if True (default), index returned DataFrame by 'query',
                          otherwise, index by number. Only applicable if as_dataframe=True.
@@ -207,10 +194,9 @@ class MyVariantInfo():
                  'chr1:g.879381C>T',
                  'chr1:g.878330C>G']
 
-        >>> mv.getvariants(vars, email='abc@example.com')
         >>> mv.getvariants(vars, fields="dbnsfp.cadd.phred")
         >>> mv.getvariants('chr1:g.876664G>A,chr1:g.881918G>A', fields="all")
-        >>> mv.getvariants(['chr1:g.876664G>A', 'chr1:g.881918G>A'], as_dataframe=True)
+        >>> mv.getvariants(['chr1:g.876664G>A', 'chr1:g.881918G>A'], dataframe="normal)
         
         .. Hint:: A large list of more than 1000 input ids will be sent to the backend
                   web service in batches (1000 at a time), and then the results will be
@@ -243,24 +229,21 @@ class MyVariantInfo():
             out = self._dataframe(out, dataframe)
         return out
 
-    def queryvariant(self, q, **kwargs):
+    def queryVariant(self, q, **kwargs):
         '''Return  the query result.
         This is a wrapper for GET query of "/query?q=<query>" service.
 
-        :param q: a query string, detailed query syntax `here <http://mygene.info/doc/query_service.html#query-syntax>`_
+        :param q: a query string, detailed query syntax `here <http://myvariant.info/doc/query_service.html#query-syntax>`_
         :param fields: fields to return, a list or a comma-separated string.
                         If **fields="all"**, all available fields are returned
-        :param species: optionally, you can pass comma-separated species names
-                        or taxonomy ids. Default: human,mouse,rat.
         :param size:   the maximum number of results to return (with a cap
                        of 1000 at the moment). Default: 10.
         :param skip:   the number of results to skip. Default: 0.
         :param sort:   Prefix with "-" for descending order, otherwise in ascending order.
                        Default: sort by matching scores in decending order.
-        :param entrezonly: if True, return only matching entrez genes, otherwise, including matching
-                           Ensemble-only genes (those have no matching entrez genes).
-        :param email: optionally, pass your email to help us to track usage
-        :param as_dataframe: if True, return object as DataFrame (requires Pandas).
+        :param dataframe: "normal" returns a normalized, unnested DataFrame.
+                          "by_source" returns a DataFrame where column names are database sources
+                          with data nested within columns. (requires Pandas).
         :param df_index: if True (default), index returned DataFrame by 'query',
                          otherwise, index by number. Only applicable if as_dataframe=True.
 
@@ -271,19 +254,19 @@ class MyVariantInfo():
 
         Example:
 
-        >>> mv.queryvariant('cdk2')
-        >>> mv.queryvariant('reporter:1000_at')
-        >>> mv.queryvariant('symbol:cdk2', species='human')
-        >>> mv.queryvariant('symbol:cdk*', species=10090, size=5, as_dataframe=True)
-        >>> mv.queryvariant('q=chrX:151073054-151383976', species=9606)
+        >>> mv.queryVariant('q=exists_:dbsnp AND _exists_:cosmic')
+        >>> mv.queryVariant('q=dbnsfp.polyphen2.hdiv.score:>0.99 AND chrom:1')
+        >>> mv.queryVariant('cadd.phred:>50')
+        >>> mv.queryVariant('dbnsfp.genename:MLL2', size=5)
+        >>> mv.queryVariant('q=chrX:151073054-151383976')
 
         '''
-        as_dataframe = kwargs.pop('as_dataframe', False)
+        dataframe = kwargs.pop('dataframe', None)
         kwargs.update({'q': q})
         _url = self.url + '/query'
         out = self._get(_url, kwargs)
-        if as_dataframe:
-            out = self._as_dataframe(out, False)
+        if dataframe:
+            out = self._dataframe(out, dataframe)
         return out
 
     def _queryvariants_inner(self, qterms, **kwargs):
@@ -292,7 +275,7 @@ class MyVariantInfo():
         _url = self.url + '/query'
         return self._post(_url, _kwargs)
 
-    def queryvariants(self, q, scopes=None, **kwargs):
+    def queryVariants(self, q, scopes=None, **kwargs):
         '''Return the batch query result.
         This is a wrapper for POST query of "/query" service.
 
@@ -303,30 +286,24 @@ class MyVariantInfo():
                        of fields.
         :param fields: fields to return, a list or a comma-separated string.
                         If **fields="all"**, all available fields are returned
-        :param species: optionally, you can pass comma-separated species names
-                          or taxonomy ids. Default: human,mouse,rat.
-        :param entrezonly:  if True, return only matching entrez genes, otherwise, including matching
-                             Ensemble-only genes (those have no matching entrez genes).
-
         :param returnall:   if True, return a dict of all related data, including dup. and missing qterms
         :param verbose:     if True (default), print out infomation about dup and missing qterms
-        :param email: optionally, pass your email to help us to track usage
-        :param as_dataframe: if True, return object as DataFrame (requires Pandas).
+        :param dataframe: "normal" returns a normalized, unnested DataFrame.
+			  "by_source" returns a DataFrame where column names are database sources
+			  with data nested within columns. (requires Pandas).
         :param df_index: if True (default), index returned DataFrame by 'query',
                          otherwise, index by number. Only applicable if as_dataframe=True.
-
-        :return: a list of gene objects or a pandas DataFrame object (when **as_dataframe** is True)
-
-        :ref: http://mygene.info/doc/query_service.html for available
+        :return: a list of gene objects or a pandas DataFrame object.
+        :ref: http://myvariant.info/doc/query_service.html for available
               fields, extra *kwargs* and more.
 
         Example:
 
-        >>> mv.queryvariants(['DDX26B', 'CCDC83'], scopes='symbol', species=9606)
-        >>> mv.queryvariants(['1255_g_at', '1294_at', '1316_at', '1320_at'], scopes='reporter')
-        >>> mv.queryvariants(['NM_003466', 'CDK2', 695, '1320_at', 'Q08345'],
+        >>> mv.queryVariants(['DDX26B', 'CCDC83'], scopes='symbol')
+        >>> mv.queryVariants(['1255_g_at', '1294_at', '1316_at', '1320_at'], scopes='reporter')
+        >>> mv.queryVariants(['NM_003466', 'CDK2', 695, '1320_at', 'Q08345'],
         ...              scopes='refseq,symbol,entrezgene,reporter,uniprot', species='human')
-        >>> mv.queryvariants(['1255_g_at', '1294_at', '1316_at', '1320_at'], scopes='reporter',
+        >>> mv.queryVariants(['1255_g_at', '1294_at', '1316_at', '1320_at'], scopes='reporter',
         ...              fields='ensembl.gene,symbol', as_dataframe=True)
 
         .. Hint:: :py:meth:`queryvariants` is perfect for doing id mappings.
@@ -393,5 +370,3 @@ class MyVariantInfo():
             if verbose and (li_dup or li_missing):
                 print('Pass "returnall=True" to return complete lists of duplicate or missing query terms.')
             return out
-
-mv=MyVariantInfo()
