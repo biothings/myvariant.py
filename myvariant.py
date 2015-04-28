@@ -6,6 +6,7 @@ from __future__ import print_function
 import sys
 import time
 import requests
+import csv
 import json
 try:
     from pandas import DataFrame
@@ -31,6 +32,45 @@ def safe_str(s, encoding='utf-8'):
     except UnicodeEncodeError:
         _s = s.encode(encoding)
     return _s
+
+def get_hgvs(input_vcf):
+    f = open(input_vcf)
+    vcf = csv.reader(f)
+    vcf = [row[0].split("\t") for row in vcf if '#' not in row[0]]
+    for row in vcf:
+        if "chr" in row[0]:
+            row[0] = row[0].replace("chr", "")
+    return [get_hgvs_from_vcf(row[0],row[1],row[3],row[4]) for row in vcf]
+
+
+def get_hgvs_from_vcf(chr, pos, ref, alt):
+    '''get a valid hgvs name from VCF-style "chr, pos, ref, alt" data.'''
+    if len(ref) == len(alt) == 1:
+        # this is a SNP
+        hgvs = 'chr{0}:g.{1}{2}>{3}'.format(chr, pos, ref, alt)
+    elif len(ref) > 1 and len(alt) == 1:
+        # this is a deletion:
+        if ref[0] == alt:
+            start = int(pos) + 1
+            end = int(pos) + len(ref) - 1
+            hgvs = 'chr{0}:g.{1}_{2}del'.format(chr, start, end)
+	else:
+	    end = int(pos) + len(ref) - 1
+            hgvs = 'chr{0}:g.{1}_{2}delins{3}'.format(chr, pos, end, alt)
+    elif len(ref) == 1 and len(alt) > 1:
+        # this is a insertion
+        if alt[0] == ref:
+            hgvs = 'chr{0}:g.{1}_{2}ins'.format(chr, pos, int(pos) + 1)
+            ins_seq = alt[1:]
+            hgvs += ins_seq
+	else:
+	    hgvs = 'chr{0}:g.{1}delins{2}'.format(chr, pos, alt)
+    elif len(ref) > 1 and len(alt) > 1:
+        end = int(pos) + len(alt) - 1
+        hgvs = 'chr{0}:g.{1}_{2}delins{3}'.format(chr, pos, end, alt)
+    else:
+        raise ValueError("Cannot convert {} into HGVS id.".format((chr, pos, ref, alt)))
+    return hgvs
 
 
 class MyVariantInfo():
