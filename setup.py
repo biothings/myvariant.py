@@ -13,7 +13,7 @@ setup(
     author_email="cwu@scripps.edu",
     description="Python Client for MyVariant.Info services.",
     license="BSD",
-    keywords="biology genetic variant annotation web service client api",
+    keywords="biology gene variant annotation web service client api myvariant",
     url="https://github.com/Network-of-BioThings/myvariant.py",
     packages=['myvariant'],
     long_description=read('README.rst'),
