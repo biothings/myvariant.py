@@ -15,7 +15,7 @@ try:
 except:
     df_avail = False
 
-__version__ = '2.2.1'
+__version__ = '0.1.0'
 
 if sys.version_info[0] == 3:
     str_types = str
@@ -54,8 +54,8 @@ def get_hgvs_from_vcf(chr, pos, ref, alt):
             start = int(pos) + 1
             end = int(pos) + len(ref) - 1
             hgvs = 'chr{0}:g.{1}_{2}del'.format(chr, start, end)
-	else:
-	    end = int(pos) + len(ref) - 1
+        else:
+            end = int(pos) + len(ref) - 1
             hgvs = 'chr{0}:g.{1}_{2}delins{3}'.format(chr, pos, end, alt)
     elif len(ref) == 1 and len(alt) > 1:
         # this is a insertion
@@ -63,8 +63,8 @@ def get_hgvs_from_vcf(chr, pos, ref, alt):
             hgvs = 'chr{0}:g.{1}_{2}ins'.format(chr, pos, int(pos) + 1)
             ins_seq = alt[1:]
             hgvs += ins_seq
-	else:
-	    hgvs = 'chr{0}:g.{1}delins{2}'.format(chr, pos, alt)
+        else:
+            hgvs = 'chr{0}:g.{1}delins{2}'.format(chr, pos, alt)
     elif len(ref) > 1 and len(alt) > 1:
         end = int(pos) + len(alt) - 1
         hgvs = 'chr{0}:g.{1}_{2}delins{3}'.format(chr, pos, end, alt)
@@ -329,8 +329,8 @@ class MyVariantInfo():
         :param returnall:   if True, return a dict of all related data, including dup. and missing qterms
         :param verbose:     if True (default), print out infomation about dup and missing qterms
         :param dataframe: "normal" returns a normalized, unnested DataFrame.
-			  "by_source" returns a DataFrame where column names are database sources
-			  with data nested within columns. (requires Pandas).
+              "by_source" returns a DataFrame where column names are database sources
+              with data nested within columns. (requires Pandas).
         :param df_index: if True (default), index returned DataFrame by 'query',
                          otherwise, index by number. Only applicable if as_dataframe=True.
         :return: a list of gene objects or a pandas DataFrame object.

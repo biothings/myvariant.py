@@ -31,5 +31,6 @@ setup(
     ],
     install_requires=[
         'httplib2>=0.6',
+        'requests',
     ],
 )
