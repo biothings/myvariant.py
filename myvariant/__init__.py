@@ -7,7 +7,6 @@ import sys
 import time
 import requests
 import csv
-import json
 try:
     from pandas import DataFrame
     from pandas.io.json import json_normalize
@@ -19,10 +18,8 @@ __version__ = '0.1.0'
 
 if sys.version_info[0] == 3:
     str_types = str
-    from urllib.parse import urlencode
 else:
     str_types = (str, unicode)
-    from urllib import urlencode
 
 
 def safe_str(s, encoding='utf-8'):
@@ -40,7 +37,7 @@ def get_hgvs(input_vcf):
     for row in vcf:
         if "chr" in row[0]:
             row[0] = row[0].replace("chr", "")
-    return [get_hgvs_from_vcf(row[0],row[1],row[3],row[4]) for row in vcf]
+    return [get_hgvs_from_vcf(row[0], row[1], row[3], row[4]) for row in vcf]
 
 
 def get_hgvs_from_vcf(chr, pos, ref, alt):
@@ -96,7 +93,7 @@ class MyVariantInfo():
         if not df_avail:
             print("Error: pandas module must be installed for as_dataframe option.")
             return
-        if dataframe not in [ "by_source", "normal"] :
+        if dataframe not in ["by_source", "normal"]:
             raise ValueError("return must be normal or by_source")
         if 'hits' in var_obj:
             if dataframe == "normal":
@@ -115,8 +112,8 @@ class MyVariantInfo():
         return_raw = params.pop('return_raw', False)
         headers = {'user-agent': "Python-requests_myvariant.py/%s (gzip)" % requests.__version__}
         res = requests.get(url, params=params, headers=headers)
-        #if debug:
-        #    return _url, res, con
+        if debug:
+            return res
         assert res.status_code == 200
         if return_raw:
             return res
@@ -124,8 +121,8 @@ class MyVariantInfo():
             return res.json()
 
     def _post(self, url, params):
-#        #if debug:
-#        #    return url, res, con
+        #if debug:
+        #    return url, res, con
         debug = params.pop('debug', False)
         return_raw = params.pop('return_raw', False)
         headers = {'content-type': 'application/x-www-form-urlencoded',
@@ -136,7 +133,6 @@ class MyVariantInfo():
             return res
         else:
             return res.json()
-
 
     def _format_list(self, a_list, sep=','):
         if isinstance(a_list, (list, tuple)):
@@ -237,7 +233,7 @@ class MyVariantInfo():
         >>> mv.getvariants(vars, fields="dbnsfp.cadd.phred")
         >>> mv.getvariants('chr1:g.876664G>A,chr1:g.881918G>A', fields="all")
         >>> mv.getvariants(['chr1:g.876664G>A', 'chr1:g.881918G>A'], dataframe="normal)
-        
+
         .. Hint:: A large list of more than 1000 input ids will be sent to the backend
                   web service in batches (1000 at a time), and then the results will be
                   concatenated together. So, from the user-end, it's exactly the same as
@@ -247,7 +243,7 @@ class MyVariantInfo():
         if isinstance(ids, str_types):
             ids = ids.split(',')
         if (not (isinstance(ids, (list, tuple)) and len(ids) > 0)):
-            raise ValueError('input "variantids" must be non-empty list or tuple.')   
+            raise ValueError('input "variantids" must be non-empty list or tuple.')
         if fields:
             kwargs['fields'] = self._format_list(fields)
         verbose = kwargs.pop('verbose', True)
@@ -392,10 +388,10 @@ class MyVariantInfo():
         if dataframe:
             out = self._dataframe(out, dataframe)
 
-        # check dup hits
-       # if li_query:
-       #     li_dup = [(query, cnt) for query, cnt in list_itemcnt(li_query) if cnt > 1]
-       # del li_query
+        # # check dup hits
+        # if li_query:
+        #     li_dup = [(query, cnt) for query, cnt in list_itemcnt(li_query) if cnt > 1]
+        # del li_query
 
         if verbose:
             if li_dup:
