@@ -4,13 +4,13 @@ Intro
 MyVariant.Info_ provides simple-to-use REST web services to query/retrieve genetic variant annotation data. It's designed with simplicity and performance emphasized. *myvariant*, is an easy-to-use Python wrapper to access MyVariant.Info_ services.
 
 .. _MyVariant.Info: http://myvariant.info
-.. _httplib2: http://code.google.com/p/httplib2/
+.. _requests: https://pypi.python.org/pypi/requests
 
 Requirements
 ============
     python >=2.6 (including python3)
 
-    httplib2_ (install using "pip install httplib2")
+    requests_ (install using "pip install requestes")
 
 Optional dependencies
 ======================
