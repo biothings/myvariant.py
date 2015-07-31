@@ -321,8 +321,6 @@ class MyVariantInfo():
                                   True or 1: using json_normalize
                                   2        : using DataFrame.from_dict
                                   otherwise: return original json
-        :param df_index: if True (default), index returned DataFrame by 'query',
-                         otherwise, index by number. Only applicable if as_dataframe=True.
 
         :return: a dictionary with returned gene hits or a pandas DataFrame object (when **as_dataframe** is True)
 
@@ -342,12 +340,11 @@ class MyVariantInfo():
             dataframe = 1
         elif dataframe != 2:
             dataframe = None
-        df_index = kwargs.pop('df_index', True)
         kwargs.update({'q': q})
         _url = self.url + '/query'
         out = self._get(_url, kwargs)
         if dataframe:
-            out = self._dataframe(out, dataframe, df_index=df_index)
+            out = self._dataframe(out, dataframe, df_index=False)
         return out
 
     def _queryvariants_inner(self, qterms, **kwargs):
