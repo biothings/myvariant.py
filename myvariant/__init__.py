@@ -265,9 +265,9 @@ class MyVariantInfo():
                  'chr1:g.879381C>T',
                  'chr1:g.878330C>G']
 
-        >>> mv.getvariants(vars, fields="dbnsfp.cadd.phred")
+        >>> mv.getvariants(vars, fields="cadd.phred")
         >>> mv.getvariants('chr1:g.876664G>A,chr1:g.881918G>A', fields="all")
-        >>> mv.getvariants(['chr1:g.876664G>A', 'chr1:g.881918G>A'], dataframe="normal)
+        >>> mv.getvariants(['chr1:g.876664G>A', 'chr1:g.881918G>A'], as_dataframe=True)
 
         .. Hint:: A large list of more than 1000 input ids will be sent to the backend
                   web service in batches (1000 at a time), and then the results will be
@@ -385,7 +385,7 @@ class MyVariantInfo():
         >>> mv.querymany(['RCV000083620', 'RCV000083611', 'RCV000083584'], scopes='clinvar.rcv_accession')
         >>> mv.querymany(['COSM1362966', 'COSM990046', 'COSM1392449'], scopes='cosmic.cosmic_id', fields='cosmic')
         >>> mv.querymany(['COSM1362966', 'COSM990046', 'COSM1392449'], scopes='cosmic.cosmic_id',
-        ...              fields='cosmic.tumor_site', dataframe='normal')
+        ...              fields='cosmic.tumor_site', as_dataframe=True)
 
         .. Hint:: :py:meth:`queryvariants` is perfect for query variants based different ids, e.g. rsid, clinvar ids, etc.
 
