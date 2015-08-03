@@ -10,7 +10,7 @@ Requirements
 ============
     python >=2.6 (including python3)
 
-    requests_ (install using "pip install requestes")
+    requests_ (install using "pip install requests")
 
 Optional dependencies
 ======================
