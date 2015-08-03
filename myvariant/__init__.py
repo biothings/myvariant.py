@@ -62,13 +62,24 @@ def list_itemcnt(list):
 
 
 def get_hgvs(input_vcf):
-    f = open(input_vcf)
-    vcf = csv.reader(f)
-    vcf = [row[0].split("\t") for row in vcf if '#' not in row[0]]
-    for row in vcf:
-        if "chr" in row[0]:
-            row[0] = row[0].replace("chr", "")
-    return [get_hgvs_from_vcf(row[0], row[1], row[3], row[4]) for row in vcf]
+    '''From the input vcf file (filename or file handle), return a generator
+       of genomic based HGVS ids.
+    '''
+    if isinstance(input_vcf, str_types):
+        # if input_vcf is a string, open it as a file
+        in_f = open(input_vcf)
+    else:
+        # otherwise it should be a file handle already
+        in_f = input_vcf
+    for row in in_f:
+        if row[0] == '#':
+            continue
+        row = row.strip()
+        if row:
+            row = row.split('\t')
+            if row[0].lower().startswith('chr'):
+                row[0] = row[0][3:]
+            yield get_hgvs_from_vcf(row[0], row[1], row[3], row[4])
 
 
 def get_hgvs_from_vcf(chr, pos, ref, alt):
