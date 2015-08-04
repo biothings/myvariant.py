@@ -262,6 +262,7 @@ class MyVariantInfo():
                         If not provided or **fields="all"**, all available fields are returned
 
         Example:
+
         >>> mv.getvariant('chr9:g.107620835G>A')
         >>> mv.getvariant('chr9:g.107620835G>A', fields='dbnsfp.genename')
         >>> mv.getvariant('chr9:g.107620835G>A', fields=['dbnsfp.genename', 'cadd.phred'])
@@ -302,16 +303,16 @@ class MyVariantInfo():
         :ref: http://docs.myvariant.info/en/latest/doc/variant_annotation_service.html.
 
         Example:
-        >>> vars = ['chr1:g.866422C>T',
-                 'chr1:g.876664G>A',
-                 'chr1:g.69635G>C',
-                 'chr1:g.69869T>A',
-                 'chr1:g.881918G>A',
-                 'chr1:g.865625G>A',
-                 'chr1:g.69892T>C',
-                 'chr1:g.879381C>T',
-                 'chr1:g.878330C>G']
 
+        >>> vars = ['chr1:g.866422C>T',
+        ...         'chr1:g.876664G>A',
+        ...         'chr1:g.69635G>C',
+        ...         'chr1:g.69869T>A',
+        ...         'chr1:g.881918G>A',
+        ...         'chr1:g.865625G>A',
+        ...         'chr1:g.69892T>C',
+        ...         'chr1:g.879381C>T',
+        ...         'chr1:g.878330C>G']
         >>> mv.getvariants(vars, fields="cadd.phred")
         >>> mv.getvariants('chr1:g.876664G>A,chr1:g.881918G>A', fields="all")
         >>> mv.getvariants(['chr1:g.876664G>A', 'chr1:g.881918G>A'], as_dataframe=True)
@@ -321,6 +322,9 @@ class MyVariantInfo():
                   concatenated together. So, from the user-end, it's exactly the same as
                   passing a shorter list. You don't need to worry about saturating our
                   backend servers.
+
+        .. Hint:: If you need to pass a very large list of input ids, you can pass a generator
+                  instead of a full list, which is more memory efficient.
         '''
         if isinstance(vids, str_types):
             vids = vids.split(',') if vids else []
@@ -434,6 +438,9 @@ class MyVariantInfo():
         .. Hint:: :py:meth:`queryvariants` is perfect for query variants based different ids, e.g. rsid, clinvar ids, etc.
 
         .. Hint:: Just like :py:meth:`getvariants`, passing a large list of ids (>1000) to :py:meth:`queryvariants` is perfectly fine.
+
+        .. Hint:: If you need to pass a very large list of input qterms, you can pass a generator
+                  instead of a full list, which is more memory efficient.
 
         '''
         if isinstance(qterms, str_types):
