@@ -63,6 +63,22 @@ class TestSequenceFunctions(unittest.TestCase):
         self.assertEqual(v_li[1]['_id'], self.query_list1[1])
         self.assertEqual(v_li[2]['_id'], self.query_list1[2])
 
+        self.mv.step = 4
+        # test input is a string of comma-separated ids
+        v_li2 = self.mv.getvariants(','.join(self.query_list1))
+        self.assertEqual(v_li, v_li2)
+        # test input is a tuple
+        v_li2 = self.mv.getvariants(tuple(self.query_list1))
+        self.assertEqual(v_li, v_li2)
+
+        # test input is a generator
+        def _input(li):
+            for x in li:
+                yield x
+        v_li2 = self.mv.getvariants(_input(self.query_list1))
+        self.assertEqual(v_li, v_li2)
+        self.mv.step = 1000
+
     def test_query(self):
         qres = self.mv.query('dbnsfp.genename:cdk2', size=5)
         self.assertTrue('hits' in qres)
@@ -89,8 +105,17 @@ class TestSequenceFunctions(unittest.TestCase):
         qres = self.mv.querymany(self.query_list1, verbose=False)
         self.assertEqual(len(qres), 9)
 
-        qres = self.mv.querymany(self.query_list1, verbose=False)
-        self.assertEqual(len(qres), 9)
+        self.mv.step = 4
+        # test input as a string
+        qres2 = self.mv.querymany(','.join(self.query_list1), verbose=False)
+        self.assertEqual(qres, qres2)
+        # test input as a tuple
+        qres2 = self.mv.querymany(tuple(self.query_list1), verbose=False)
+        self.assertEqual(qres, qres2)
+        # test input as a iterator
+        qres2 = self.mv.querymany(iter(self.query_list1), verbose=False)
+        self.assertEqual(qres, qres2)
+        self.mv.step = 1000
 
     def test_querymany_with_scopes(self):
         qres = self.mv.querymany(['rs58991260', 'rs2500'], scopes='dbsnp.rsid', verbose=False)
