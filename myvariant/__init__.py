@@ -6,7 +6,8 @@ from __future__ import print_function
 import sys
 import time
 import requests
-import csv
+from itertools import islice
+from collections import Iterable
 try:
     from pandas import DataFrame
     from pandas.io.json import json_normalize
@@ -59,6 +60,25 @@ def list_itemcnt(list):
         else:
             x[item] = 1
     return [(i, x[i]) for i in x]
+
+
+def iter_n(iterable, n, with_cnt=False):
+    '''
+    Iterate an iterator by chunks (of n)
+    if with_cnt is True, return (chunk, cnt) each time
+    '''
+    it = iter(iterable)
+    if with_cnt:
+        cnt = 0
+    while True:
+        chunk = tuple(islice(it, n))
+        if not chunk:
+            return
+        if with_cnt:
+            cnt += len(chunk)
+            yield (chunk, cnt)
+        else:
+            yield chunk
 
 
 def get_hgvs(input_vcf):
@@ -166,9 +186,6 @@ class MyVariantInfo():
             return res.json()
 
     def _post(self, url, params):
-        #if debug:
-        #    return url, res, con
-        debug = params.pop('debug', False)
         return_raw = params.pop('return_raw', False)
         headers = {'content-type': 'application/x-www-form-urlencoded',
                    'user-agent': "Python-requests_myvariant.py/%s (gzip)" % requests.__version__}
@@ -186,7 +203,8 @@ class MyVariantInfo():
             _out = a_list     # a_list is already a comma separated string
         return _out
 
-    def _repeated_query(self, query_fn, query_li, verbose=True, **fn_kwargs):
+    def _repeated_query_old(self, query_fn, query_li, verbose=True, **fn_kwargs):
+        '''This is deprecated, query_li can only be a list'''
         step = min(self.step, self.max_query)
         if len(query_li) <= step:
             # No need to do series of batch queries, turn off verbose output
@@ -202,6 +220,24 @@ class MyVariantInfo():
             if verbose:
                 print("done.")
             if not is_last_loop and self.delay:
+                time.sleep(self.delay)
+
+    def _repeated_query(self, query_fn, query_li, verbose=True, **fn_kwargs):
+        '''run query_fn for input query_li in a batch (self.step).
+           return a generator of query_result in each batch.
+           input query_li can be a list/tuple/iterable
+        '''
+        step = min(self.step, self.max_query)
+        i = 0
+        for batch, cnt in iter_n(query_li, step, with_cnt=True):
+            if verbose:
+                print("querying {0}-{1}...".format(i+1, cnt), end="")
+            i = cnt
+            query_result = query_fn(batch, **fn_kwargs)
+            yield query_result
+            if verbose:
+                print("done.")
+            if self.delay:
                 time.sleep(self.delay)
 
     @property
@@ -251,7 +287,7 @@ class MyVariantInfo():
         '''Return the list of variant annotation objects for the given list of hgvs-base varaint ids.
         This is a wrapper for POST query of "/variant" service.
 
-        :param ids: a list or comm-sep HGVS ids
+        :param ids: a list/tuple/iterable or a string of comm-sep HGVS ids.
         :param fields: fields to return, a list or a comma-separated string.
                         If **fields="all"**, all available fields are returned
         :param as_dataframe: if True or 1 or 2, return object as DataFrame (requires Pandas).
@@ -287,9 +323,9 @@ class MyVariantInfo():
                   backend servers.
         '''
         if isinstance(vids, str_types):
-            vids = vids.split(',')
-        if (not (isinstance(vids, (list, tuple)) and len(vids) > 0)):
-            raise ValueError('input "vids" must be non-empty list or tuple.')
+            vids = vids.split(',') if vids else []
+        if (not (isinstance(vids, (list, tuple, Iterable)))):
+            raise ValueError('input "vids" must be a list, tuple or iterable.')
         if fields:
             kwargs['fields'] = self._format_list(fields)
         verbose = kwargs.pop('verbose', True)
@@ -364,11 +400,11 @@ class MyVariantInfo():
         _url = self.url + '/query'
         return self._post(_url, _kwargs)
 
-    def querymany(self, q, scopes=None, **kwargs):
+    def querymany(self, qterms, scopes=None, **kwargs):
         '''Return the batch query result.
         This is a wrapper for POST query of "/query" service.
 
-        :param qterms: a list of query terms, or a string of comma-separated query terms.
+        :param qterms: a list/tuple/iterable of query terms, or a string of comma-separated query terms.
         :param scopes:  type of types of identifiers, either a list or a comma-separated fields to specify type of
                        input qterms, e.g. "dbsnp.rsid", "clinvar.rcv_accession", ["dbsnp.rsid", "cosmic.cosmic_id"]
                        refer to "http://docs.myvariant.info/en/latest/doc/data.html#available-fields" for full list
@@ -400,10 +436,10 @@ class MyVariantInfo():
         .. Hint:: Just like :py:meth:`getvariants`, passing a large list of ids (>1000) to :py:meth:`queryvariants` is perfectly fine.
 
         '''
-        if isinstance(q, str_types):
-            qterms = q.split(',')
-        if (not (isinstance(q, (list, tuple)) and len(q) > 0)):
-            raise ValueError('input "qterms" must be non-empty list or tuple.')
+        if isinstance(qterms, str_types):
+            qterms = qterms.split(',') if qterms else []
+        if (not (isinstance(qterms, (list, tuple, Iterable)))):
+            raise ValueError('input "qterms" must be a list, tuple or iterable.')
 
         if scopes:
             kwargs['scopes'] = self._format_list(scopes)
@@ -425,8 +461,8 @@ class MyVariantInfo():
         li_missing = []
         li_dup = []
         li_query = []
-        query_fn = lambda q: self._queryvariants_inner(q, **kwargs)
-        for hits in self._repeated_query(query_fn, q, verbose=verbose):
+        query_fn = lambda qterms: self._queryvariants_inner(qterms, **kwargs)
+        for hits in self._repeated_query(query_fn, qterms, verbose=verbose):
             if return_raw:
                 out.append(hits)   # hits is the raw response text
             else:
