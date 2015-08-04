@@ -80,10 +80,20 @@ def iter_n(iterable, n, with_cnt=False):
         else:
             yield chunk
 
-
-def get_hgvs(input_vcf):
-    '''From the input vcf file (filename or file handle), return a generator
+def get_hgvs_from_vcf(input_vcf):
+    '''From the input VCF file (filename or file handle), return a generator
        of genomic based HGVS ids.
+
+       :param input_vcf: input VCF file, can be a filename or a file handle
+
+       :returns: a generator of genomic based HGVS ids. To get back a list
+                 instead, using *list(get_hgvs_from_vcf("your_vcf_file"))*
+
+       .. NOTE:: This is a lightweight VCF parser to return valid genomic-based
+                 HGVS ids from the *input_vcf* file. For more sophisticated VCF
+                 parser, consider using `PyVCF <https://pypi.python.org/pypi/PyVCF>`_
+                 module.
+
     '''
     if isinstance(input_vcf, str_types):
         # if input_vcf is a string, open it as a file
@@ -99,36 +109,39 @@ def get_hgvs(input_vcf):
             row = row.split('\t')
             if row[0].lower().startswith('chr'):
                 row[0] = row[0][3:]
-            yield get_hgvs_from_vcf(row[0], row[1], row[3], row[4])
+            yield format_hgvs(row[0], row[1], row[3], row[4])
 
 
-def get_hgvs_from_vcf(chr, pos, ref, alt):
-    '''get a valid hgvs name from VCF-style "chr, pos, ref, alt" data.'''
+def format_hgvs(chrom, pos, ref, alt):
+    '''get a valid hgvs name from VCF-style "chrom, pos, ref, alt" data.'''
+    if chrom.lower().startswith('chr'):
+        # trim off leading "chr" if any
+        chrom = chrom[3:]
     if len(ref) == len(alt) == 1:
         # this is a SNP
-        hgvs = 'chr{0}:g.{1}{2}>{3}'.format(chr, pos, ref, alt)
+        hgvs = 'chr{0}:g.{1}{2}>{3}'.format(chrom, pos, ref, alt)
     elif len(ref) > 1 and len(alt) == 1:
         # this is a deletion:
         if ref[0] == alt:
             start = int(pos) + 1
             end = int(pos) + len(ref) - 1
-            hgvs = 'chr{0}:g.{1}_{2}del'.format(chr, start, end)
+            hgvs = 'chr{0}:g.{1}_{2}del'.format(chrom, start, end)
         else:
             end = int(pos) + len(ref) - 1
-            hgvs = 'chr{0}:g.{1}_{2}delins{3}'.format(chr, pos, end, alt)
+            hgvs = 'chr{0}:g.{1}_{2}delins{3}'.format(chrom, pos, end, alt)
     elif len(ref) == 1 and len(alt) > 1:
         # this is a insertion
         if alt[0] == ref:
-            hgvs = 'chr{0}:g.{1}_{2}ins'.format(chr, pos, int(pos) + 1)
+            hgvs = 'chr{0}:g.{1}_{2}ins'.format(chrom, pos, int(pos) + 1)
             ins_seq = alt[1:]
             hgvs += ins_seq
         else:
-            hgvs = 'chr{0}:g.{1}delins{2}'.format(chr, pos, alt)
+            hgvs = 'chr{0}:g.{1}delins{2}'.format(chrom, pos, alt)
     elif len(ref) > 1 and len(alt) > 1:
         end = int(pos) + len(alt) - 1
-        hgvs = 'chr{0}:g.{1}_{2}delins{3}'.format(chr, pos, end, alt)
+        hgvs = 'chr{0}:g.{1}_{2}delins{3}'.format(chrom, pos, end, alt)
     else:
-        raise ValueError("Cannot convert {} into HGVS id.".format((chr, pos, ref, alt)))
+        raise ValueError("Cannot convert {} into HGVS id.".format((chrom, pos, ref, alt)))
     return hgvs
 
 
@@ -259,7 +272,9 @@ class MyVariantInfo():
         :param geneid: entrez/ensembl gene id, entrez gene id can be either
                        a string or integer
         :param fields: fields to return, a list or a comma-separated string.
-                        If not provided or **fields="all"**, all available fields are returned
+                       If not provided or **fields="all"**, all available fields
+                       are returned. See `here <http://docs.myvariant.info/en/latest/doc/data.html#available-fields>`_
+                       for all available fields.
 
         Example:
 
@@ -290,7 +305,9 @@ class MyVariantInfo():
 
         :param ids: a list/tuple/iterable or a string of comm-sep HGVS ids.
         :param fields: fields to return, a list or a comma-separated string.
-                        If **fields="all"**, all available fields are returned
+                       If not provided or **fields="all"**, all available fields
+                       are returned. See `here <http://docs.myvariant.info/en/latest/doc/data.html#available-fields>`_
+                       for all available fields.
         :param as_dataframe: if True or 1 or 2, return object as DataFrame (requires Pandas).
                                   True or 1: using json_normalize
                                   2        : using DataFrame.from_dict
@@ -362,7 +379,9 @@ class MyVariantInfo():
 
         :param q: a query string, detailed query syntax `here <http://docs.myvariant.info/en/latest/doc/variant_query_service.html#query-syntax>`_
         :param fields: fields to return, a list or a comma-separated string.
-                        If not provided or **fields="all"**, all available fields are returned
+                       If not provided or **fields="all"**, all available fields
+                       are returned. See `here <http://docs.myvariant.info/en/latest/doc/data.html#available-fields>`_
+                       for all available fields.
         :param size:   the maximum number of results to return (with a cap
                        of 1000 at the moment). Default: 10.
         :param skip:   the number of results to skip. Default: 0.
@@ -414,7 +433,9 @@ class MyVariantInfo():
                        refer to "http://docs.myvariant.info/en/latest/doc/data.html#available-fields" for full list
                        of fields.
         :param fields: fields to return, a list or a comma-separated string.
-                        If not provided or **fields="all"**, all available fields are returned
+                       If not provided or **fields="all"**, all available fields
+                       are returned. See `here <http://docs.myvariant.info/en/latest/doc/data.html#available-fields>`_
+                       for all available fields.
         :param returnall:   if True, return a dict of all related data, including dup. and missing qterms
         :param verbose:     if True (default), print out information about dup and missing qterms
         :param as_dataframe: if True or 1 or 2, return object as DataFrame (requires Pandas).
