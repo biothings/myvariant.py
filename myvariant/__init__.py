@@ -15,7 +15,7 @@ try:
 except:
     df_avail = False
 
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 
 if sys.version_info[0] == 3:
     str_types = str
