@@ -62,9 +62,8 @@ API
 
 .. py:module:: myvariant
 .. autofunction:: alwayslist
-.. autofunction:: get_hgvs
 .. autofunction:: get_hgvs_from_vcf
-.. autoattribute:: metadata
+.. autofunction:: format_hgvs
 .. autoclass:: MyVariantInfo
     :members:
 
