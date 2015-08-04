@@ -20,7 +20,9 @@ Installation
 =============
 
     Option 1
-          pip install myvariant
+          ::
+
+           pip install myvariant
 
     Option 2
           download/extract the source code and run::
