@@ -276,6 +276,30 @@ class MyVariantInfo:
         _url = self.url+'/metadata'
         return self._get(_url)
 
+
+    def get_fields(self, search_term=None):
+        ''' Wrapper for http://myvariant.info/v1/fields
+
+            search_term is a case insensitive string to search for in available field names.
+
+        Example:
+
+        >>>
+
+        '''
+        _url = self.url + '/fields'
+        these_fields = self._get(_url)
+        if search_term:
+            ret = dict([(k, v) for (k, v) in these_fields.items() if search_term.lower() in k.lower()])
+        else:
+            ret = these_fields
+        for (k, v) in ret.items():
+            # Get rid of the notes column information
+            if "notes" in v:
+                del v['notes']
+        return ret
+
+
     def getvariant(self, vid, fields=None, **kwargs):
         '''Return the variant object for the give HGVS-based variant id.
         This is a wrapper for GET query of "/variant/<hgvsid>" service.
