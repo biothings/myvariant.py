@@ -276,7 +276,6 @@ class MyVariantInfo:
         _url = self.url+'/metadata'
         return self._get(_url)
 
-
     def get_fields(self, search_term=None):
         ''' Wrapper for http://myvariant.info/v1/fields
 
@@ -298,7 +297,6 @@ class MyVariantInfo:
             if "notes" in v:
                 del v['notes']
         return ret
-
 
     def getvariant(self, vid, fields=None, **kwargs):
         '''Return the variant object for the give HGVS-based variant id.
