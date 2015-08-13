@@ -5,9 +5,10 @@ Python Client for MyVariant.Info services
 from __future__ import print_function
 import sys
 import time
-import requests
 from itertools import islice
 from collections import Iterable
+
+import requests
 try:
     from pandas import DataFrame
     from pandas.io.json import json_normalize
@@ -113,7 +114,17 @@ def get_hgvs_from_vcf(input_vcf):
 
 
 def format_hgvs(chrom, pos, ref, alt):
-    '''get a valid hgvs name from VCF-style "chrom, pos, ref, alt" data.'''
+    '''get a valid hgvs name from VCF-style "chrom, pos, ref, alt" data.
+
+    Example:
+
+        >>> myvariant.format_hgvs("1", 35366, "C", "T")
+        >>> myvariant.format_hgvs("2", 17142, "G", "GA")
+        >>> myvariant.format_hgvs("MT", 8270, "CACCCCCTCT", "C")
+        >>> myvariant.format_hgvs("X", 107930849, "GGA", "C")
+
+    '''
+    chrom = str(chrom)
     if chrom.lower().startswith('chr'):
         # trim off leading "chr" if any
         chrom = chrom[3:]
@@ -145,7 +156,7 @@ def format_hgvs(chrom, pos, ref, alt):
     return hgvs
 
 
-class MyVariantInfo():
+class MyVariantInfo:
     '''This is the client for MyVariant.info web services.
     Example:
 
