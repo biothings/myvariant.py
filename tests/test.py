@@ -160,6 +160,10 @@ class TestSequenceFunctions(unittest.TestCase):
         self.mv.step = default_step
         self.assertEqual(qres1, qres2)
 
+    def test_get_fields(self):
+        fields = self.mv.get_fields()
+        self.assertTrue('dbsnp' in fields.keys())
+        self.assertTrue('clinvar' in fields.keys())
 
 if __name__ == '__main__':
     unittest.main()
