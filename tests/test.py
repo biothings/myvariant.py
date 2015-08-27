@@ -49,6 +49,9 @@ class TestSequenceFunctions(unittest.TestCase):
         self.assertEqual(v['_id'], "chr9:g.107620835G>A")
         self.assertEqual(v['snpeff']['ann']['gene_name'], 'ABCA1')
 
+        v = self.mv.getvariant("'chr1:g.1A>C'")   # something does not exist
+        self.assertEqual(v, None)
+
     def test_getvariant_with_fields(self):
         v = self.mv.getvariant("chr9:g.107620835G>A", fields="dbnsfp,cadd,cosmic")
         self.assertTrue('_id' in v)

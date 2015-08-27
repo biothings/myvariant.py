@@ -196,14 +196,16 @@ class MyVariantInfo:
             df = df.set_index('query')
         return df
 
-    def _get(self, url, params={}):
+    def _get(self, url, params={}, none_on_404=False):
         debug = params.pop('debug', False)
         return_raw = params.pop('return_raw', False)
         headers = {'user-agent': "Python-requests_myvariant.py/%s (gzip)" % requests.__version__}
         res = requests.get(url, params=params, headers=headers)
         if debug:
             return res
-        assert res.status_code == 200
+        if none_on_404 and res.status_code == 404:
+            return None
+        assert res.status_code == 200, res
         if return_raw:
             return res.text
         else:
@@ -214,7 +216,7 @@ class MyVariantInfo:
         headers = {'content-type': 'application/x-www-form-urlencoded',
                    'user-agent': "Python-requests_myvariant.py/%s (gzip)" % requests.__version__}
         res = requests.post(url, data=params, headers=headers)
-        assert res.status_code == 200
+        assert res.status_code == 200, res
         if return_raw:
             return res
         else:
@@ -309,6 +311,8 @@ class MyVariantInfo:
                        are returned. See `here <http://docs.myvariant.info/en/latest/doc/data.html#available-fields>`_
                        for all available fields.
 
+        :return: a variant object as a dictionary, or None if vid is not found.
+
         Example:
 
         >>> mv.getvariant('chr9:g.107620835G>A')
@@ -324,7 +328,7 @@ class MyVariantInfo:
         if fields:
             kwargs['fields'] = self._format_list(fields)
         _url = self.url + '/variant/' + str(vid)
-        return self._get(_url, kwargs)
+        return self._get(_url, kwargs, none_on_404=True)
 
     def _getvariants_inner(self, geneids, **kwargs):
         _kwargs = {'ids': self._format_list(geneids)}
