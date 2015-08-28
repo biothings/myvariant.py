@@ -1,5 +1,6 @@
 dev:
     return None when input vid does not exist for getvariant method.
+    raise requests.exceptions.HTTPError when invalid status code returned.
     new "get_fields" method to search for matching field names.
 
 v0.1.2 (2015/08/03):
