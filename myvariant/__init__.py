@@ -81,6 +81,7 @@ def iter_n(iterable, n, with_cnt=False):
         else:
             yield chunk
 
+
 def get_hgvs_from_vcf(input_vcf):
     '''From the input VCF file (filename or file handle), return a generator
        of genomic based HGVS ids.
@@ -171,6 +172,10 @@ class MyVariantInfo:
         # delay and step attributes are for batch queries.
         self.delay = 1
         self.step = 1000
+        # raise requests.exceptions.HTTPError for status_code > 400
+        #   but not for 404 on getvariant
+        #   set to False to surpress the exceptions.
+        self.raise_for_status = True
 
     def _dataframe(self, var_obj, dataframe, df_index=True):
         """
@@ -205,7 +210,9 @@ class MyVariantInfo:
             return res
         if none_on_404 and res.status_code == 404:
             return None
-        assert res.status_code == 200, res
+        if self.raise_for_status:
+            # raise requests.exceptions.HTTPError if not 200
+            res.raise_for_status()
         if return_raw:
             return res.text
         else:
@@ -216,7 +223,9 @@ class MyVariantInfo:
         headers = {'content-type': 'application/x-www-form-urlencoded',
                    'user-agent': "Python-requests_myvariant.py/%s (gzip)" % requests.__version__}
         res = requests.post(url, data=params, headers=headers)
-        assert res.status_code == 200, res
+        if self.raise_for_status:
+            # raise requests.exceptions.HTTPError if not 200
+            res.raise_for_status()
         if return_raw:
             return res
         else:
