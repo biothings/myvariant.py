@@ -1,10 +1,14 @@
-v0.1.0 (2015/07/31):
-    initial release
+dev:
+    return None when input vid does not exist for getvariant method.
+    new "get_fields" method to search for matching field names.
+
+v0.1.2 (2015/08/03):
+    renamed get_hgvs_from_vcf to format_hgvs for clarity.
+    renamed get_hgvs to format_hgvs_from_vcf for clarity.
 
 v0.1.1 (2015/08/03):
     getvariants and querymany methods now support an iterator as the input (more memory efficient for a large list)
     get_hgvs helper function now takes either filename or file handle and return a generator instead of a list.
 
-v0.1.2 (2015/08/03):
-    renamed get_hgvs_from_vcf to format_hgvs for clarity.
-    renamed get_hgvs to format_hgvs_from_vcf for clarity.
+v0.1.0 (2015/07/31):
+    initial release
