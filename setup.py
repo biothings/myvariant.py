@@ -9,12 +9,12 @@ def read(fname):
 setup(
     name="myvariant",
     version="0.1.2",
-    author="Chunlei Wu",
+    author="Chunlei Wu, Cyrus Afrasiabi",
     author_email="cwu@scripps.edu",
     description="Python Client for MyVariant.Info services.",
     license="BSD",
     keywords="biology variant annotation web service client api myvariant",
-    url="https://github.com/Network-of-BioThings/myvariant.py",
+    url="https://github.com/sulab/myvariant.py",
     packages=['myvariant'],
     long_description=read('README.rst'),
     classifiers=[
