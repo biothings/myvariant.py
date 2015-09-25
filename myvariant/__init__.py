@@ -24,6 +24,11 @@ else:
     str_types = (str, unicode)
 
 
+class ScanError(Exception):
+    # for errors in scan search type
+    pass
+
+
 def alwayslist(value):
     '''If input value if not a list/tuple type, return it as a single value list.
 
@@ -172,6 +177,7 @@ class MyVariantInfo:
         # delay and step attributes are for batch queries.
         self.delay = 1
         self.step = 1000
+        self.scroll_size = 1000
         # raise requests.exceptions.HTTPError for status_code > 400
         #   but not for 404 on getvariant
         #   set to False to surpress the exceptions.
@@ -422,7 +428,6 @@ class MyVariantInfo:
     def query(self, q, **kwargs):
         '''Return  the query result.
         This is a wrapper for GET query of "/query?q=<query>" service.
-
         :param q: a query string, detailed query syntax `here <http://docs.myvariant.info/en/latest/doc/variant_query_service.html#query-syntax>`_
         :param fields: fields to return, a list or a comma-separated string.
                        If not provided or **fields="all"**, all available fields
@@ -437,31 +442,55 @@ class MyVariantInfo:
                                   True or 1: using json_normalize
                                   2        : using DataFrame.from_dict
                                   otherwise: return original json
-
         :return: a dictionary with returned gene hits or a pandas DataFrame object (when **as_dataframe** is True)
-
         :ref: http://docs.myvariant.info/en/latest/doc/variant_query_service.html.
-
         Example:
-
         >>> mv.query('_exists_:dbsnp AND _exists_:cosmic')
         >>> mv.query('dbnsfp.polyphen2.hdiv.score:>0.99 AND chrom:1')
         >>> mv.query('cadd.phred:>50')
         >>> mv.query('dbnsfp.genename:CDK2', size=5)
         >>> mv.query('chrX:151073054-151383976')
-
         '''
+
+        kwargs.update({'q': q})
+        fetch_all = kwargs.get('fetch_all')
+        if fetch_all in [True, 1]:
+            return self._fetch_all(**kwargs)
         dataframe = kwargs.pop('as_dataframe', None)
         if dataframe in [True, 1]:
             dataframe = 1
         elif dataframe != 2:
             dataframe = None
-        kwargs.update({'q': q})
         _url = self.url + '/query'
         out = self._get(_url, kwargs)
         if dataframe:
             out = self._dataframe(out, dataframe, df_index=False)
         return out
+
+    def _fetch_all(self, **kwargs):
+        ''' Function that returns a generator to results.  Assumes that 'q' is in kwargs.'''
+        # get the total number of hits and start the scroll_id
+        _url = self.url + '/query'
+        res = self._get(_url, kwargs)
+        try:
+            scroll_id = res['_scroll_id']
+            total_hits = int(res['hits']['total'])
+        except KeyError:
+            raise ScanError("Unable to open scroll.")
+        kwargs.pop('q', None)
+        kwargs.pop('fetch_all', None)
+        print("Fetching generator for {} variant(s)...".format(total_hits))
+        while True:
+            # get next scroll results
+            kwargs.update({'scroll_id': scroll_id})
+            out = self._get(_url, kwargs)
+            if 'error' in out:
+                break
+            if '_warning' in out:
+                print(out['_warning'])
+            scroll_id = out.get('_scroll_id')
+            for hit in out['hits']:
+                yield hit
 
     def _queryvariants_inner(self, qterms, **kwargs):
         _kwargs = {'q': self._format_list(qterms)}
