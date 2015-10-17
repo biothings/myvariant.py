@@ -294,7 +294,7 @@ class MyVariantInfo:
         return self._get(_url)
 
     def get_fields(self, search_term=None):
-        ''' Wrapper for http://myvariant.info/v1/fields
+        ''' Wrapper for http://myvariant.info/metadata/fields
 
             search_term is a case insensitive string to search for in available field names.
 
@@ -303,7 +303,7 @@ class MyVariantInfo:
         >>>
 
         '''
-        _url = self.url + '/fields'
+        _url = self.url + '/metadata/fields'
         these_fields = self._get(_url)
         if search_term:
             ret = dict([(k, v) for (k, v) in these_fields.items() if search_term.lower() in k.lower()])
