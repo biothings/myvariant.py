@@ -294,7 +294,7 @@ class MyVariantInfo:
         return self._get(_url)
 
     def get_fields(self, search_term=None):
-        ''' Wrapper for http://myvariant.info/metadata/fields
+        ''' Wrapper for http://myvariant.info/v1/metadata/fields
 
             search_term is a case insensitive string to search for in available field names.
 
@@ -442,10 +442,11 @@ class MyVariantInfo:
                                   True or 1: using json_normalize
                                   2        : using DataFrame.from_dict
                                   otherwise: return original json
-        :param fetch_all: if True, return a generator to all query results (unsorted).  This can provide a very fast 
+        :param fetch_all: if True, return a generator to all query results (unsorted).  This can provide a very fast
                           return of many results using the elasticsearch scroll function.
-                          Server requests are done in blocks of 1000 and yielded individually.  Each 1000 block of 
-                          results must be yielded in 1 minute or less, otherwise the scroll will close.                          
+                          Server requests are done in blocks of 1000 and yielded individually.  Each 1000 block of
+                          results must be yielded in 1 minute or less, otherwise the scroll will close.
+
         :return: a dictionary with returned gene hits or a pandas DataFrame object (when **as_dataframe** is True)
         :ref: http://docs.myvariant.info/en/latest/doc/variant_query_service.html.
         Example:
@@ -481,6 +482,8 @@ class MyVariantInfo:
             total_hits = int(res['total'])
         except KeyError:
             raise ScanError("Unable to open scroll.")
+        if total_hits == 0:
+            raise StopIteration
         kwargs.pop('q', None)
         kwargs.pop('fetch_all', None)
         print("Fetching {} variant(s)...".format(total_hits))
