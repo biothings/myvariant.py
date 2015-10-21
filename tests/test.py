@@ -1,6 +1,7 @@
 import unittest
 import sys
 import os.path
+import types
 try:
     from pandas import DataFrame
     pandas_avail = True
@@ -11,10 +12,11 @@ import myvariant
 sys.stdout.write('"myvariant {0}" loaded from "{1}"\n'.format(myvariant.__version__, myvariant.__file__))
 
 
-class TestSequenceFunctions(unittest.TestCase):
+class TestMyVariantPy(unittest.TestCase):
 
     def setUp(self):
         self.mv = myvariant.MyVariantInfo()
+        self.mv.url = "http://52.89.178.88/v1"
         self.query_list1 = [
             'chr1:g.866422C>T',
             'chr1:g.876664G>A',
@@ -103,6 +105,14 @@ class TestSequenceFunctions(unittest.TestCase):
         qres = self.mv.query('chr1:69000-70000')
         self.assertTrue('hits' in qres)
         self.assertTrue(qres['total'] >= 3)
+
+    def test_query_fetch_all(self):
+        qres = self.mv.query('dbnsfp.genename:CDK2')
+        total = qres['total']
+
+        qres = self.mv.query('dbnsfp.genename:CDK2', fetch_all=True)
+        self.assertTrue(isinstance(qres, types.GeneratorType))
+        self.assertEqual(total, len(list(qres)))
 
     def test_querymany(self):
         qres = self.mv.querymany(self.query_list1, verbose=False)

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 '''
 Python Client for MyVariant.Info services
 '''
@@ -454,6 +453,7 @@ class MyVariantInfo:
         >>> mv.query('dbnsfp.polyphen2.hdiv.score:>0.99 AND chrom:1')
         >>> mv.query('cadd.phred:>50')
         >>> mv.query('dbnsfp.genename:CDK2', size=5)
+        >>> mv.query('dbnsfp.genename:CDK2', fetch_all=True)
         >>> mv.query('chrX:151073054-151383976')
         '''
 
