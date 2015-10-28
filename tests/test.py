@@ -16,7 +16,6 @@ class TestMyVariantPy(unittest.TestCase):
 
     def setUp(self):
         self.mv = myvariant.MyVariantInfo()
-        self.mv.url = "http://52.89.178.88/v1"
         self.query_list1 = [
             'chr1:g.866422C>T',
             'chr1:g.876664G>A',
@@ -89,11 +88,18 @@ class TestMyVariantPy(unittest.TestCase):
         self.assertTrue('hits' in qres)
         self.assertEqual(len(qres['hits']), 5)
 
+    def test_query_hgvs(self):
+        qres = self.mv.query('"NM_000048.3:c.566A>G"', size=5)
+        self.assertTrue('hits' in qres)
+        self.assertEqual(len(qres['hits']), 1)
+
     def test_query_rsid(self):
         qres = self.mv.query('dbsnp.rsid:rs58991260')
         self.assertTrue('hits' in qres)
         self.assertEqual(len(qres['hits']), 1)
         self.assertEqual(qres['hits'][0]['_id'], 'chr1:g.218631822G>A')
+        qres2 = self.mv.query('rs58991260')
+        self.assertEqual(qres['hits'], qres2['hits'])
 
     def test_query_symbol(self):
         qres = self.mv.query('snpeff.ann.gene_name:cdk2')
