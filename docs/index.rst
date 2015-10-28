@@ -42,12 +42,12 @@ Installation
     Option 3
           install the latest code directly from the repository::
 
-            pip install -e git+https://github.com/Network-of-BioThings/myvariant.py
+            pip install -e git+https://github.com/sulab/myvariant.py
 
 Version history
 ===============
 
-    `CHANGES.txt <https://raw.githubusercontent.com/Network-of-BioThings/myvariant.py/master/CHANGES.txt>`_
+    `CHANGES.txt <https://raw.githubusercontent.com/sulab/myvariant.py/master/CHANGES.txt>`_
 
 Tutorial
 =========
