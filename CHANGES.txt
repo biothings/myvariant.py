@@ -1,7 +1,8 @@
-dev:
+v0.2.0 (2015/10/28):
     return None when input vid does not exist for getvariant method.
     raise requests.exceptions.HTTPError when invalid status code returned.
     new "get_fields" method to search for matching field names.
+    new "fetch_all" parameter for query method to retrieve large query.
 
 v0.1.2 (2015/08/03):
     renamed get_hgvs_from_vcf to format_hgvs for clarity.
