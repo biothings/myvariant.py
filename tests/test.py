@@ -1,6 +1,7 @@
 import unittest
 import sys
 import os.path
+import types
 try:
     from pandas import DataFrame
     pandas_avail = True
@@ -11,7 +12,7 @@ import myvariant
 sys.stderr.write('"myvariant {0}" loaded from "{1}"\n'.format(myvariant.__version__, myvariant.__file__))
 
 
-class TestSequenceFunctions(unittest.TestCase):
+class TestMyVariantPy(unittest.TestCase):
 
     def setUp(self):
         self.mv = myvariant.MyVariantInfo()
@@ -87,11 +88,18 @@ class TestSequenceFunctions(unittest.TestCase):
         self.assertTrue('hits' in qres)
         self.assertEqual(len(qres['hits']), 5)
 
+    def test_query_hgvs(self):
+        qres = self.mv.query('"NM_000048.3:c.566A>G"', size=5)
+        self.assertTrue('hits' in qres)
+        self.assertEqual(len(qres['hits']), 1)
+
     def test_query_rsid(self):
         qres = self.mv.query('dbsnp.rsid:rs58991260')
         self.assertTrue('hits' in qres)
         self.assertEqual(len(qres['hits']), 1)
         self.assertEqual(qres['hits'][0]['_id'], 'chr1:g.218631822G>A')
+        qres2 = self.mv.query('rs58991260')
+        self.assertEqual(qres['hits'], qres2['hits'])
 
     def test_query_symbol(self):
         qres = self.mv.query('snpeff.ann.gene_name:cdk2')
@@ -103,6 +111,14 @@ class TestSequenceFunctions(unittest.TestCase):
         qres = self.mv.query('chr1:69000-70000')
         self.assertTrue('hits' in qres)
         self.assertTrue(qres['total'] >= 3)
+
+    def test_query_fetch_all(self):
+        qres = self.mv.query('dbnsfp.genename:CDK2')
+        total = qres['total']
+
+        qres = self.mv.query('dbnsfp.genename:CDK2', fetch_all=True)
+        self.assertTrue(isinstance(qres, types.GeneratorType))
+        self.assertEqual(total, len(list(qres)))
 
     def test_querymany(self):
         qres = self.mv.querymany(self.query_list1, verbose=False)
