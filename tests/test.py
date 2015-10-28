@@ -8,7 +8,7 @@ except ImportError:
     pandas_avail = False
 sys.path.insert(0, os.path.split(os.path.split(os.path.abspath(__file__))[0])[0])
 import myvariant
-sys.stdout.write('"myvariant {0}" loaded from "{1}"\n'.format(myvariant.__version__, myvariant.__file__))
+sys.stderr.write('"myvariant {0}" loaded from "{1}"\n'.format(myvariant.__version__, myvariant.__file__))
 
 
 class TestSequenceFunctions(unittest.TestCase):
