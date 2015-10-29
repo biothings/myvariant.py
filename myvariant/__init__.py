@@ -184,7 +184,7 @@ class MyVariantInfo:
 
     def _dataframe(self, var_obj, dataframe, df_index=True):
         """
-        converts gene object to DataFrame (pandas)
+        converts variant object to DataFrame (pandas)
         """
         if not df_avail:
             print("Error: pandas module must be installed for as_dataframe option.")
@@ -295,11 +295,17 @@ class MyVariantInfo:
     def get_fields(self, search_term=None):
         ''' Wrapper for http://myvariant.info/v1/metadata/fields
 
-            search_term is a case insensitive string to search for in available field names.
+            **search_term** is a case insensitive string to search for in available field names.
+            If not provided, all available fields will be returned.
+
 
         Example:
 
-        >>>
+        >>> mv.get_fields()
+        >>> mv.get_fields("rsid")
+        >>> mv.get_fields("sift")
+
+        .. Hint:: This is useful to find out the field names you need to pass to **fields** parameter of other methods.
 
         '''
         _url = self.url + '/metadata/fields'
@@ -318,8 +324,7 @@ class MyVariantInfo:
         '''Return the variant object for the give HGVS-based variant id.
         This is a wrapper for GET query of "/variant/<hgvsid>" service.
 
-        :param geneid: entrez/ensembl gene id, entrez gene id can be either
-                       a string or integer
+        :param vid: an HGVS-based variant id. `More about HGVS id <http://docs.myvariant.info/en/latest/doc/data.html#id-field>`_.
         :param fields: fields to return, a list or a comma-separated string.
                        If not provided or **fields="all"**, all available fields
                        are returned. See `here <http://docs.myvariant.info/en/latest/doc/data.html#available-fields>`_
@@ -344,8 +349,8 @@ class MyVariantInfo:
         _url = self.url + '/variant/' + str(vid)
         return self._get(_url, kwargs, none_on_404=True)
 
-    def _getvariants_inner(self, geneids, **kwargs):
-        _kwargs = {'ids': self._format_list(geneids)}
+    def _getvariants_inner(self, vids, **kwargs):
+        _kwargs = {'ids': self._format_list(vids)}
         _kwargs.update(kwargs)
         _url = self.url + '/variant/'
         return self._post(_url, _kwargs)
@@ -354,7 +359,8 @@ class MyVariantInfo:
         '''Return the list of variant annotation objects for the given list of hgvs-base varaint ids.
         This is a wrapper for POST query of "/variant" service.
 
-        :param ids: a list/tuple/iterable or a string of comm-sep HGVS ids.
+        :param ids: a list/tuple/iterable or a string of comma-separated HGVS ids.
+                    `More about hgvs id <http://docs.myvariant.info/en/latest/doc/data.html#id-field>`_.
         :param fields: fields to return, a list or a comma-separated string.
                        If not provided or **fields="all"**, all available fields
                        are returned. See `here <http://docs.myvariant.info/en/latest/doc/data.html#available-fields>`_
@@ -427,7 +433,8 @@ class MyVariantInfo:
     def query(self, q, **kwargs):
         '''Return  the query result.
         This is a wrapper for GET query of "/query?q=<query>" service.
-        :param q: a query string, detailed query syntax `here <http://docs.myvariant.info/en/latest/doc/variant_query_service.html#query-syntax>`_
+
+        :param q: a query string, detailed query syntax `here <http://docs.myvariant.info/en/latest/doc/variant_query_service.html#query-syntax>`_.
         :param fields: fields to return, a list or a comma-separated string.
                        If not provided or **fields="all"**, all available fields
                        are returned. See `here <http://docs.myvariant.info/en/latest/doc/data.html#available-fields>`_
@@ -442,19 +449,27 @@ class MyVariantInfo:
                                   2        : using DataFrame.from_dict
                                   otherwise: return original json
         :param fetch_all: if True, return a generator to all query results (unsorted).  This can provide a very fast
-                          return of many results using the elasticsearch scroll function.
+                          return of all hits from a large query.
                           Server requests are done in blocks of 1000 and yielded individually.  Each 1000 block of
-                          results must be yielded in 1 minute or less, otherwise the scroll will close.
+                          results must be yielded within 1 minute, otherwise the request will expire at server side.
 
-        :return: a dictionary with returned gene hits or a pandas DataFrame object (when **as_dataframe** is True)
+        :return: a dictionary with returned variant hits or a pandas DataFrame object (when **as_dataframe** is True)
+                 or a generator of all hits (when **fetch_all** is True)
         :ref: http://docs.myvariant.info/en/latest/doc/variant_query_service.html.
+
         Example:
+
         >>> mv.query('_exists_:dbsnp AND _exists_:cosmic')
         >>> mv.query('dbnsfp.polyphen2.hdiv.score:>0.99 AND chrom:1')
         >>> mv.query('cadd.phred:>50')
         >>> mv.query('dbnsfp.genename:CDK2', size=5)
         >>> mv.query('dbnsfp.genename:CDK2', fetch_all=True)
         >>> mv.query('chrX:151073054-151383976')
+
+        .. Hint:: By default, **query** method returns the first 10 hits if the matched hits are >10. If the total number
+                  of hits are less than 1000, you can increase the value for **size** parameter. For a query returns
+                  more than 1000 hits, you can pass "fetch_all=True" to return a `generator <http://www.learnpython.org/en/Generators>`_
+                  of all matching hits (internally, those hits are requested from the server-side in blocks of 1000).
         '''
 
         kwargs.update({'q': q})
@@ -499,7 +514,7 @@ class MyVariantInfo:
             for hit in out['hits']:
                 yield hit
 
-    def _queryvariants_inner(self, qterms, **kwargs):
+    def _querymany_inner(self, qterms, **kwargs):
         _kwargs = {'q': self._format_list(qterms)}
         _kwargs.update(kwargs)
         _url = self.url + '/query'
@@ -510,10 +525,10 @@ class MyVariantInfo:
         This is a wrapper for POST query of "/query" service.
 
         :param qterms: a list/tuple/iterable of query terms, or a string of comma-separated query terms.
-        :param scopes:  type of types of identifiers, either a list or a comma-separated fields to specify type of
-                       input qterms, e.g. "dbsnp.rsid", "clinvar.rcv_accession", ["dbsnp.rsid", "cosmic.cosmic_id"]
-                       refer to "http://docs.myvariant.info/en/latest/doc/data.html#available-fields" for full list
-                       of fields.
+        :param scopes: specify the type (or types) of identifiers passed to **qterms**, either a list or a comma-separated fields to specify type of
+                       input qterms, e.g. "dbsnp.rsid", "clinvar.rcv_accession", ["dbsnp.rsid", "cosmic.cosmic_id"].
+                       See `here <http://docs.myvariant.info/en/latest/doc/data.html#available-fields>`_ for full list
+                       of supported fields.
         :param fields: fields to return, a list or a comma-separated string.
                        If not provided or **fields="all"**, all available fields
                        are returned. See `here <http://docs.myvariant.info/en/latest/doc/data.html#available-fields>`_
@@ -538,9 +553,9 @@ class MyVariantInfo:
         >>> mv.querymany(['COSM1362966', 'COSM990046', 'COSM1392449'], scopes='cosmic.cosmic_id',
         ...              fields='cosmic.tumor_site', as_dataframe=True)
 
-        .. Hint:: :py:meth:`queryvariants` is perfect for query variants based different ids, e.g. rsid, clinvar ids, etc.
+        .. Hint:: :py:meth:`querymany` is perfect for query variants based different ids, e.g. rsid, clinvar ids, etc.
 
-        .. Hint:: Just like :py:meth:`getvariants`, passing a large list of ids (>1000) to :py:meth:`queryvariants` is perfectly fine.
+        .. Hint:: Just like :py:meth:`getvariants`, passing a large list of ids (>1000) to :py:meth:`querymany` is perfectly fine.
 
         .. Hint:: If you need to pass a very large list of input qterms, you can pass a generator
                   instead of a full list, which is more memory efficient.
@@ -571,7 +586,7 @@ class MyVariantInfo:
         li_missing = []
         li_dup = []
         li_query = []
-        query_fn = lambda qterms: self._queryvariants_inner(qterms, **kwargs)
+        query_fn = lambda qterms: self._querymany_inner(qterms, **kwargs)
         for hits in self._repeated_query(query_fn, qterms, verbose=verbose):
             if return_raw:
                 out.append(hits)   # hits is the raw response text
