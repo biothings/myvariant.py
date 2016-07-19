@@ -15,6 +15,12 @@ try:
 except:
     df_avail = False
 
+try:
+    import requests_cache
+    caching_avail = True
+except:
+    caching_avail = False
+
 __version__ = '0.2.0'
 
 if sys.version_info[0] == 3:
@@ -302,7 +308,6 @@ class MyVariantInfo:
 
             **cache_db** is the path to the local sqlite cache database.'''
         try:
-            import requests_cache
             requests_cache.install_cache(cache_name=cache_db, **kwargs)
             self._cached = True
         except:
