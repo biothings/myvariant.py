@@ -181,6 +181,7 @@ class MyVariantInfo:
         #   but not for 404 on getvariant
         #   set to False to surpress the exceptions.
         self.raise_for_status = True
+        self._cached = False
 
     def _dataframe(self, var_obj, dataframe, df_index=True):
         """
@@ -220,8 +221,9 @@ class MyVariantInfo:
             res.raise_for_status()
         if return_raw:
             return res.text
-        else:
-            return res.json()
+        if 'from_cache' in vars(res):
+            res['_from_cache'] = vars(res).get('from_cache')
+        return res.json()
 
     def _post(self, url, params):
         return_raw = params.pop('return_raw', False)
@@ -233,8 +235,9 @@ class MyVariantInfo:
             res.raise_for_status()
         if return_raw:
             return res
-        else:
-            return res.json()
+        if 'from_cache' in vars(res):
+            res['_from_cache'] = vars(res).get('from_cache')
+        return res.json()
 
     def _format_list(self, a_list, sep=','):
         if isinstance(a_list, (list, tuple)):
@@ -291,6 +294,32 @@ class MyVariantInfo:
         '''
         _url = self.url+'/metadata'
         return self._get(_url)
+
+    def start_caching(self, cache_db, **kwargs):
+        ''' Installs a local cache for all requests.  
+
+            **cache_db** is the path to the local sqlite cache database.'''
+        try:
+            import requests_cache
+            requests_cache.install_cache(cache_name=cache_db, **kwargs)
+            self._cached = True
+        except:
+            print("Error: The requests_cache python module is required to use request caching.")
+            print("https://requests-cache.readthedocs.io/en/latest/user_guide.html#installation")
+        return
+            
+    def stop_caching(self):
+        ''' Stop caching.'''
+        if self._cached:
+            requests_cache.uninstall_cache()
+            self._cached = False
+
+    def clear_cache(self):
+        ''' Clear the globally installed cache. '''
+        try:
+            requests_cache.clear()
+        except:
+            pass
 
     def get_fields(self, search_term=None):
         ''' Wrapper for http://myvariant.info/v1/metadata/fields
@@ -503,16 +532,16 @@ class MyVariantInfo:
         kwargs.pop('fetch_all', None)
         print("Fetching {} variant(s)...".format(total_hits))
         while True:
+            for hit in res['hits']:
+                yield hit
             # get next scroll results
             kwargs.update({'scroll_id': scroll_id})
-            out = self._get(_url, kwargs)
-            if 'error' in out:
+            res = self._get(_url, kwargs)
+            if 'error' in res:
                 break
-            if '_warning' in out:
-                print(out['_warning'])
-            scroll_id = out.get('_scroll_id')
-            for hit in out['hits']:
-                yield hit
+            if '_warning' in res:
+                print(res['_warning'])
+            scroll_id = res.get('_scroll_id')
 
     def _querymany_inner(self, qterms, **kwargs):
         _kwargs = {'q': self._format_list(qterms)}
