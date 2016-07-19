@@ -221,9 +221,10 @@ class MyVariantInfo:
             res.raise_for_status()
         if return_raw:
             return res.text
+        ret = res.json()
         if 'from_cache' in vars(res):
-            res['_from_cache'] = vars(res).get('from_cache')
-        return res.json()
+            ret['_from_cache'] = vars(res).get('from_cache')
+        return ret
 
     def _post(self, url, params):
         return_raw = params.pop('return_raw', False)
@@ -235,9 +236,10 @@ class MyVariantInfo:
             res.raise_for_status()
         if return_raw:
             return res
+        ret = res.json()
         if 'from_cache' in vars(res):
-            res['_from_cache'] = vars(res).get('from_cache')
-        return res.json()
+            ret['_from_cache'] = vars(res).get('from_cache')
+        return ret
 
     def _format_list(self, a_list, sep=','):
         if isinstance(a_list, (list, tuple)):
