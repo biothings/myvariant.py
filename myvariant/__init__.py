@@ -303,23 +303,24 @@ class MyVariantInfo:
         _url = self.url+'/metadata'
         return self._get(_url)
 
-    def start_caching(self, cache_db, **kwargs):
+    def set_caching(self, cache_db='myvariant_cache', **kwargs):
         ''' Installs a local cache for all requests.  
 
             **cache_db** is the path to the local sqlite cache database.'''
-        try:
+        if caching_avail:
             requests_cache.install_cache(cache_name=cache_db, **kwargs)
             self._cached = True
-        except:
+        else: 
             print("Error: The requests_cache python module is required to use request caching.")
-            print("https://requests-cache.readthedocs.io/en/latest/user_guide.html#installation")
+            print("See - https://requests-cache.readthedocs.io/en/latest/user_guide.html#installation")
         return
-            
+
     def stop_caching(self):
         ''' Stop caching.'''
         if self._cached:
             requests_cache.uninstall_cache()
             self._cached = False
+        return
 
     def clear_cache(self):
         ''' Clear the globally installed cache. '''
