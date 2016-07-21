@@ -121,7 +121,8 @@ def get_hgvs_from_vcf(input_vcf):
             row = row.split('\t')
             if row[0].lower().startswith('chr'):
                 row[0] = row[0][3:]
-            yield format_hgvs(row[0], row[1], row[3], row[4])
+            for alt in row[4].split(','):
+                yield format_hgvs(row[0], row[1], row[3], alt)
 
 
 def _normalized_vcf(chrom, pos, ref, alt):
