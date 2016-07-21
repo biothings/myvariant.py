@@ -40,6 +40,22 @@ class TestMyVariantPy(unittest.TestCase):
             'rs372452565'
         ]
 
+    def test_format_hgvs(self):
+        self.assertEqual(myvariant.format_hgvs("1", 35366, "C", "T"),
+                         'chr1:g.35366C>T')
+        self.assertEqual(myvariant.format_hgvs("chr2", 17142, "G", "GA"),
+                         'chr2:g.17142_17143insA')
+        self.assertEqual(myvariant.format_hgvs("1", 10019, "TA", "T"),
+                         'chr1:g.10020del')
+        self.assertEqual(myvariant.format_hgvs("MT", 8270, "CACCCCCTCT", "C"),
+                         'chrMT:g.8271_8279del')
+        self.assertEqual(myvariant.format_hgvs("7", 15903, "G", "GC"),
+                         'chr7:g.15903_15904insC')
+        self.assertEqual(myvariant.format_hgvs("X", 107930849, "GGA", "C"),
+                         'chrX:g.107930849_107930851delinsC')
+        self.assertEqual(myvariant.format_hgvs("20", 1234567, "GTC", "GTCT"),
+                         'chr20:g.1234569_1234570insT')
+
     def test_metadata(self):
         meta = self.mv.metadata
         self.assertTrue("stats" in meta)
@@ -48,7 +64,7 @@ class TestMyVariantPy(unittest.TestCase):
     def test_getvariant(self):
         v = self.mv.getvariant("chr9:g.107620835G>A")
         self.assertEqual(v['_id'], "chr9:g.107620835G>A")
-        self.assertEqual(v['snpeff']['ann']['gene_name'], 'ABCA1')
+        self.assertEqual(v['snpeff']['ann']['genename'], 'ABCA1')
 
         v = self.mv.getvariant("'chr1:g.1A>C'")   # something does not exist
         self.assertEqual(v, None)
@@ -99,13 +115,16 @@ class TestMyVariantPy(unittest.TestCase):
         self.assertEqual(len(qres['hits']), 1)
         self.assertEqual(qres['hits'][0]['_id'], 'chr1:g.218631822G>A')
         qres2 = self.mv.query('rs58991260')
+        # exclude _score field before comparison
+        qres['hits'][0].pop('_score')
+        qres2['hits'][0].pop('_score')
         self.assertEqual(qres['hits'], qres2['hits'])
 
     def test_query_symbol(self):
-        qres = self.mv.query('snpeff.ann.gene_name:cdk2')
+        qres = self.mv.query('snpeff.ann.genename:cdk2')
         self.assertTrue('hits' in qres)
         self.assertTrue(qres['total'] > 5000)
-        self.assertEqual(qres['hits'][0]['snpeff']['ann'][0]['gene_name'], 'CDK2')
+        self.assertEqual(qres['hits'][0]['snpeff']['ann'][0]['genename'], 'CDK2')
 
     def test_query_genomic_range(self):
         qres = self.mv.query('chr1:69000-70000')
