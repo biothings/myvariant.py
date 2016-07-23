@@ -274,6 +274,8 @@ class MyVariantInfo:
         ret = res.json()
         if 'from_cache' in vars(res):
             ret['_from_cache'] = vars(res).get('from_cache')
+        else:
+            ret['_from_cache'] = False
         return ret
 
     def _post(self, url, params):
@@ -289,6 +291,8 @@ class MyVariantInfo:
         ret = res.json()
         if 'from_cache' in vars(res):
             ret['_from_cache'] = vars(res).get('from_cache')
+        else:
+            ret['_from_cache'] = False
         return ret
 
     def _format_list(self, a_list, sep=','):
@@ -361,7 +365,7 @@ class MyVariantInfo:
 
     def stop_caching(self):
         ''' Stop caching.'''
-        if self._cached:
+        if self._cached and caching_avail:
             requests_cache.uninstall_cache()
             self._cached = False
         return
