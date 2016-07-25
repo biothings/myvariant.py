@@ -257,6 +257,19 @@ class MyVariantInfo:
             df = df.set_index('query')
         return df
 
+    def _add_caching_to_response(self, response, result):
+        def _get_from_cache(r):
+            if 'from_cache' in vars(r):
+                return vars(r).get('from_cache')
+            return False
+
+        if isinstance(result, dict):
+            result['_from_cache'] = _get_from_cache(response)
+        elif isinstance(result, (list, tuple)):
+            for i in result:
+                i['_from_cache'] = _get_from_cache(response)
+        return result
+
     def _get(self, url, params={}, none_on_404=False):
         debug = params.pop('debug', False)
         return_raw = params.pop('return_raw', False)
@@ -272,11 +285,7 @@ class MyVariantInfo:
         if return_raw:
             return res.text
         ret = res.json()
-        if 'from_cache' in vars(res):
-            ret['_from_cache'] = vars(res).get('from_cache')
-        else:
-            ret['_from_cache'] = False
-        return ret
+        return self._add_caching_to_response(res, ret)
 
     def _post(self, url, params):
         return_raw = params.pop('return_raw', False)
@@ -289,11 +298,7 @@ class MyVariantInfo:
         if return_raw:
             return res
         ret = res.json()
-        if 'from_cache' in vars(res):
-            ret['_from_cache'] = vars(res).get('from_cache')
-        else:
-            ret['_from_cache'] = False
-        return ret
+        return self._add_caching_to_response(res, ret)
 
     def _format_list(self, a_list, sep=','):
         if isinstance(a_list, (list, tuple)):

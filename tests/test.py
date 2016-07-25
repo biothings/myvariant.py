@@ -1,6 +1,6 @@
 import unittest
 import sys
-import os.path
+import os
 import types
 try:
     from pandas import DataFrame
@@ -132,10 +132,10 @@ class TestMyVariantPy(unittest.TestCase):
         self.assertTrue(qres['total'] >= 3)
 
     def test_query_fetch_all(self):
-        qres = self.mv.query('dbnsfp.genename:CDK2')
+        qres = self.mv.query('chr1:69500-70000', fields="chrom")
         total = qres['total']
 
-        qres = self.mv.query('dbnsfp.genename:CDK2', fetch_all=True)
+        qres = self.mv.query('chr1:69500-70000', fields="chrom", fetch_all=True)
         self.assertTrue(isinstance(qres, types.GeneratorType))
         self.assertEqual(total, len(list(qres)))
 
@@ -202,6 +202,44 @@ class TestMyVariantPy(unittest.TestCase):
         fields = self.mv.get_fields()
         self.assertTrue('dbsnp' in fields.keys())
         self.assertTrue('clinvar' in fields.keys())
+
+    def test_caching(self):
+        pre_cache_r = self.mv.getvariant("chr9:g.107620835G>A")
+        self.assertFalse(pre_cache_r['_from_cache'])
+        
+        self.mv.set_caching('mvc')
+        self.assertTrue(os.path.exists('mvc.sqlite'))
+
+        cache_fill_r = self.mv.getvariant("chr9:g.107620835G>A")
+        self.assertFalse(cache_fill_r['_from_cache'])
+        
+        cached_r = self.mv.getvariant("chr9:g.107620835G>A")
+        self.assertTrue(cached_r['_from_cache'])
+        
+        self.mv.stop_caching()
+        
+        post_cache_r = self.mv.getvariant("chr9:g.107620835G>A")
+        self.assertFalse(post_cache_r['_from_cache'])
+
+        self.mv.set_caching('mvc')
+
+        recached_r = self.mv.getvariant("chr9:g.107620835G>A")
+        self.assertTrue(recached_r['_from_cache'])
+
+        self.mv.clear_cache()
+
+        clear_cached_r = self.mv.getvariant("chr9:g.107620835G>A")
+        self.assertFalse(clear_cached_r['_from_cache'])
+
+        self.mv.stop_caching()
+
+        res = [pre_cache_r, cache_fill_r, cached_r, post_cache_r, recached_r, clear_cached_r]
+        for d in res:
+            d.pop('_from_cache')
+
+        self.assertTrue(all([x == res[0] for x in res]))
+
+        os.remove('mvc.sqlite')
 
 if __name__ == '__main__':
     unittest.main()
