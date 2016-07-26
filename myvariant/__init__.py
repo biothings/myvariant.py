@@ -258,7 +258,7 @@ class MyVariantInfo:
         return df
 
     def _get(self, url, params={}, none_on_404=False, verbose=True):
-        debug = params.pop('debug', False)
+        debug = params.pop('debug_get', False)
         return_raw = params.pop('return_raw', False)
         headers = {'user-agent': "Python-requests_myvariant.py/%s (gzip)" % requests.__version__}
         res = requests.get(url, params=params, headers=headers)
@@ -587,10 +587,9 @@ class MyVariantInfo:
             print("Fetching {} variant(s) . . .".format(batch['total']))
         for key in ['q', 'fetch_all']:
             kwargs.pop(key)
-        while True:
+        while not batch.get('error', '').startswith('No results to return.'):
             if 'error' in batch:
-                if not batch['error'].startswith('No results to return.'):
-                    print(batch['error'])
+                print(batch['error'])
                 break
             if '_warning' in batch and verbose:
                 print(batch['_warning'])
@@ -598,47 +597,6 @@ class MyVariantInfo:
                 yield hit
             kwargs.update({'scroll_id': batch['_scroll_id']})
             batch = _batch()
-
-    def _fetch_old(self, **kwargs):
-        ''' Function that returns a generator to results.  Assumes that 'q' is in kwargs.'''
-        # get the total number of hits and start the scroll_id
-        _url = self.url + '/query'
-        if caching_avail:
-            cached_state = self._cached
-            self._cached = False
-            with requests_cache.disabled():
-                res = self._get(_url, kwargs, verbose=False)
-            self._cached = cached_state
-        else:
-            res = self._get(_url, kwargs, verbose=False)
-        try:
-            scroll_id = res['_scroll_id']
-            total_hits = int(res['total'])
-        except KeyError:
-            raise ScanError("Unable to open scroll.")
-        if total_hits == 0:
-            raise StopIteration
-        kwargs.pop('q', None)
-        kwargs.pop('fetch_all', None)
-        print("Fetching {} variant(s)...".format(total_hits))
-        while True:
-            for hit in res['hits']:
-                yield hit
-            # get next scroll results
-            kwargs.update({'scroll_id': scroll_id})
-            if caching_avail:
-                cached_state = self._cached
-                self._cached = False
-                with requests_cache.disabled():
-                    res = self._get(_url, kwargs, verbose=False)
-                self._cached = cached_state
-            else:
-                res = self._get(_url, kwargs, verbose=False)
-            if 'error' in res:
-                break
-            if '_warning' in res:
-                print(res['_warning'])
-            scroll_id = res.get('_scroll_id')
 
     def _querymany_inner(self, qterms, verbose=True, **kwargs):
         _kwargs = {'q': self._format_list(qterms)}
