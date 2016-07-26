@@ -335,7 +335,7 @@ class MyVariantInfo:
             if self.delay:
                 time.sleep(self.delay)
 
-    def metadata(self, verbose=True):
+    def metadata(self, verbose=True, **kwargs):
         '''Return a dictionary of MyVariant.info metadata.
 
         Example:
@@ -344,7 +344,7 @@ class MyVariantInfo:
 
         '''
         _url = self.url+'/metadata'
-        return self._get(_url, verbose=verbose)
+        return self._get(_url, params=kwargs, verbose=verbose)
 
     def set_caching(self, cache_db='myvariant_cache', **kwargs):
         ''' Installs a local cache for all requests.
@@ -389,11 +389,11 @@ class MyVariantInfo:
 
         '''
         _url = self.url + '/metadata/fields'
-        these_fields = self._get(_url, verbose=verbose)
         if search_term:
-            ret = dict([(k, v) for (k, v) in these_fields.items() if search_term.lower() in k.lower()])
+            params = {'search': search_term}
         else:
-            ret = these_fields
+            params = {}
+        ret = self._get(_url, params=params, verbose=verbose)
         for (k, v) in ret.items():
             # Get rid of the notes column information
             if "notes" in v:
@@ -434,7 +434,7 @@ class MyVariantInfo:
         _kwargs = {'ids': self._format_list(vids)}
         _kwargs.update(kwargs)
         _url = self.url + '/variant/'
-        return self._post(_url, _kwargs, verbose)
+        return self._post(_url, _kwargs, verbose=verbose)
 
     def getvariants(self, vids, fields=None, **kwargs):
         '''Return the list of variant annotation objects for the given list of hgvs-base varaint ids.
@@ -498,7 +498,7 @@ class MyVariantInfo:
         if return_raw:
             dataframe = None
 
-        query_fn = lambda vids: self._getvariants_inner(vids, verbose, **kwargs)
+        query_fn = lambda vids: self._getvariants_inner(vids, verbose=verbose, **kwargs)
         out = []
         for hits in self._repeated_query(query_fn, vids, verbose=verbose):
             if return_raw:
@@ -556,7 +556,7 @@ class MyVariantInfo:
         kwargs.update({'q': q})
         fetch_all = kwargs.get('fetch_all')
         if fetch_all in [True, 1]:
-            return self._fetch_all(**kwargs)
+            return self._fetch_all(verbose=verbose, **kwargs)
         dataframe = kwargs.pop('as_dataframe', None)
         if dataframe in [True, 1]:
             dataframe = 1
@@ -568,7 +568,38 @@ class MyVariantInfo:
             out = self._dataframe(out, dataframe, df_index=False)
         return out
 
-    def _fetch_all(self, **kwargs):
+    def _fetch_all(self, verbose=True, **kwargs):
+        ''' Function that returns a generator to results.  Assumes that 'q' is in kwargs.'''
+        # get the total number of hits and start the scroll_id
+        _url = self.url + '/query'
+        # function to get the next batch of results, automatically disables cache if we are caching
+        def _batch():
+            if caching_avail and self._cached:
+                self._cached = False
+                with requests_cache.disabled():
+                    ret = self._get(_url, params=kwargs, verbose=verbose)
+                self._cached = True
+            else:
+                ret = self._get(_url, params=kwargs, verbose=verbose)
+            return ret
+        batch = _batch()
+        if verbose:
+            print("Fetching {} variant(s) . . .".format(batch['total']))
+        for key in ['q', 'fetch_all']:
+            kwargs.pop(key)
+        while True:
+            if 'error' in batch:
+                if not batch['error'].startswith('No results to return.'):
+                    print(batch['error'])
+                break
+            if '_warning' in batch and verbose:
+                print(batch['_warning'])
+            for hit in batch['hits']:
+                yield hit
+            kwargs.update({'scroll_id': batch['_scroll_id']})
+            batch = _batch()
+
+    def _fetch_old(self, **kwargs):
         ''' Function that returns a generator to results.  Assumes that 'q' is in kwargs.'''
         # get the total number of hits and start the scroll_id
         _url = self.url + '/query'
@@ -613,7 +644,7 @@ class MyVariantInfo:
         _kwargs = {'q': self._format_list(qterms)}
         _kwargs.update(kwargs)
         _url = self.url + '/query'
-        return self._post(_url, _kwargs, verbose)
+        return self._post(_url, params=_kwargs, verbose=verbose)
 
     def querymany(self, qterms, scopes=None, **kwargs):
         '''Return the batch query result.
@@ -681,7 +712,7 @@ class MyVariantInfo:
         li_missing = []
         li_dup = []
         li_query = []
-        query_fn = lambda qterms: self._querymany_inner(qterms, verbose, **kwargs)
+        query_fn = lambda qterms: self._querymany_inner(qterms, verbose=verbose, **kwargs)
         for hits in self._repeated_query(query_fn, qterms, verbose=verbose):
             if return_raw:
                 out.append(hits)   # hits is the raw response text
