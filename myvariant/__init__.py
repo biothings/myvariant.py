@@ -257,20 +257,7 @@ class MyVariantInfo:
             df = df.set_index('query')
         return df
 
-    def _add_caching_to_response(self, response, result):
-        def _get_from_cache(r):
-            if 'from_cache' in vars(r):
-                return vars(r).get('from_cache')
-            return False
-
-        if isinstance(result, dict):
-            result['_from_cache'] = _get_from_cache(response)
-        elif isinstance(result, (list, tuple)):
-            for i in result:
-                i['_from_cache'] = _get_from_cache(response)
-        return result
-
-    def _get(self, url, params={}, none_on_404=False):
+    def _get(self, url, params={}, none_on_404=False, verbose=True):
         debug = params.pop('debug', False)
         return_raw = params.pop('return_raw', False)
         headers = {'user-agent': "Python-requests_myvariant.py/%s (gzip)" % requests.__version__}
@@ -285,9 +272,11 @@ class MyVariantInfo:
         if return_raw:
             return res.text
         ret = res.json()
-        return self._add_caching_to_response(res, ret)
+        if verbose and self._cached and vars(res).get('from_cache', False):
+            print('\nReturning cached result for "{}".'.format(url))
+        return ret
 
-    def _post(self, url, params):
+    def _post(self, url, params, verbose=True):
         return_raw = params.pop('return_raw', False)
         headers = {'content-type': 'application/x-www-form-urlencoded',
                    'user-agent': "Python-requests_myvariant.py/%s (gzip)" % requests.__version__}
@@ -298,7 +287,9 @@ class MyVariantInfo:
         if return_raw:
             return res
         ret = res.json()
-        return self._add_caching_to_response(res, ret)
+        if verbose and self._cached and vars(res).get('from_cache', False):
+            print('\nReturning cached result for "{}".'.format(url))
+        return ret
 
     def _format_list(self, a_list, sep=','):
         if isinstance(a_list, (list, tuple)):
@@ -344,24 +335,23 @@ class MyVariantInfo:
             if self.delay:
                 time.sleep(self.delay)
 
-    @property
-    def metadata(self):
+    def metadata(self, verbose=True):
         '''Return a dictionary of MyVariant.info metadata.
 
         Example:
 
-        >>> metadata = mv.metadata
+        >>> metadata = mv.metadata()
 
         '''
         _url = self.url+'/metadata'
-        return self._get(_url)
+        return self._get(_url, verbose=verbose)
 
     def set_caching(self, cache_db='myvariant_cache', **kwargs):
         ''' Installs a local cache for all requests.
 
             **cache_db** is the path to the local sqlite cache database.'''
         if caching_avail:
-            requests_cache.install_cache(cache_name=cache_db, **kwargs)
+            requests_cache.install_cache(cache_name=cache_db, allowable_methods=('GET', 'POST'), **kwargs)
             self._cached = True
         else:
             print("Error: The requests_cache python module is required to use request caching.")
@@ -382,7 +372,7 @@ class MyVariantInfo:
         except:
             pass
 
-    def get_fields(self, search_term=None):
+    def get_fields(self, search_term=None, verbose=True):
         ''' Wrapper for http://myvariant.info/v1/metadata/fields
 
             **search_term** is a case insensitive string to search for in available field names.
@@ -399,7 +389,7 @@ class MyVariantInfo:
 
         '''
         _url = self.url + '/metadata/fields'
-        these_fields = self._get(_url)
+        these_fields = self._get(_url, verbose=verbose)
         if search_term:
             ret = dict([(k, v) for (k, v) in these_fields.items() if search_term.lower() in k.lower()])
         else:
@@ -434,16 +424,17 @@ class MyVariantInfo:
                   notation for nested data structure as well, e.g. you can pass "dbnsfp.genename" or
                   "cadd.phred".
         '''
+        verbose = kwargs.pop('verbose', True)
         if fields:
             kwargs['fields'] = self._format_list(fields)
         _url = self.url + '/variant/' + str(vid)
-        return self._get(_url, kwargs, none_on_404=True)
+        return self._get(_url, kwargs, none_on_404=True, verbose=verbose)
 
-    def _getvariants_inner(self, vids, **kwargs):
+    def _getvariants_inner(self, vids, verbose=True, **kwargs):
         _kwargs = {'ids': self._format_list(vids)}
         _kwargs.update(kwargs)
         _url = self.url + '/variant/'
-        return self._post(_url, _kwargs)
+        return self._post(_url, _kwargs, verbose)
 
     def getvariants(self, vids, fields=None, **kwargs):
         '''Return the list of variant annotation objects for the given list of hgvs-base varaint ids.
@@ -507,7 +498,7 @@ class MyVariantInfo:
         if return_raw:
             dataframe = None
 
-        query_fn = lambda vids: self._getvariants_inner(vids, **kwargs)
+        query_fn = lambda vids: self._getvariants_inner(vids, verbose, **kwargs)
         out = []
         for hits in self._repeated_query(query_fn, vids, verbose=verbose):
             if return_raw:
@@ -561,7 +552,7 @@ class MyVariantInfo:
                   more than 1000 hits, you can pass "fetch_all=True" to return a `generator <http://www.learnpython.org/en/Generators>`_
                   of all matching hits (internally, those hits are requested from the server-side in blocks of 1000).
         '''
-
+        verbose = kwargs.pop('verbose', True)
         kwargs.update({'q': q})
         fetch_all = kwargs.get('fetch_all')
         if fetch_all in [True, 1]:
@@ -572,7 +563,7 @@ class MyVariantInfo:
         elif dataframe != 2:
             dataframe = None
         _url = self.url + '/query'
-        out = self._get(_url, kwargs)
+        out = self._get(_url, kwargs, verbose=verbose)
         if dataframe:
             out = self._dataframe(out, dataframe, df_index=False)
         return out
@@ -581,7 +572,14 @@ class MyVariantInfo:
         ''' Function that returns a generator to results.  Assumes that 'q' is in kwargs.'''
         # get the total number of hits and start the scroll_id
         _url = self.url + '/query'
-        res = self._get(_url, kwargs)
+        if caching_avail:
+            cached_state = self._cached
+            self._cached = False
+            with requests_cache.disabled():
+                res = self._get(_url, kwargs, verbose=False)
+            self._cached = cached_state
+        else:
+            res = self._get(_url, kwargs, verbose=False)
         try:
             scroll_id = res['_scroll_id']
             total_hits = int(res['total'])
@@ -597,18 +595,25 @@ class MyVariantInfo:
                 yield hit
             # get next scroll results
             kwargs.update({'scroll_id': scroll_id})
-            res = self._get(_url, kwargs)
+            if caching_avail:
+                cached_state = self._cached
+                self._cached = False
+                with requests_cache.disabled():
+                    res = self._get(_url, kwargs, verbose=False)
+                self._cached = cached_state
+            else:
+                res = self._get(_url, kwargs, verbose=False)
             if 'error' in res:
                 break
             if '_warning' in res:
                 print(res['_warning'])
             scroll_id = res.get('_scroll_id')
 
-    def _querymany_inner(self, qterms, **kwargs):
+    def _querymany_inner(self, qterms, verbose=True, **kwargs):
         _kwargs = {'q': self._format_list(qterms)}
         _kwargs.update(kwargs)
         _url = self.url + '/query'
-        return self._post(_url, _kwargs)
+        return self._post(_url, _kwargs, verbose)
 
     def querymany(self, qterms, scopes=None, **kwargs):
         '''Return the batch query result.
@@ -676,7 +681,7 @@ class MyVariantInfo:
         li_missing = []
         li_dup = []
         li_query = []
-        query_fn = lambda qterms: self._querymany_inner(qterms, **kwargs)
+        query_fn = lambda qterms: self._querymany_inner(qterms, verbose, **kwargs)
         for hits in self._repeated_query(query_fn, qterms, verbose=verbose):
             if return_raw:
                 out.append(hits)   # hits is the raw response text

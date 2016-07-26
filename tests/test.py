@@ -3,10 +3,19 @@ import sys
 import os
 import types
 try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
+try:
     from pandas import DataFrame
     pandas_avail = True
 except ImportError:
     pandas_avail = False
+try:
+    import requests_cache
+    caching_avail = True
+except ImportError:
+    caching_avail = False
 sys.path.insert(0, os.path.split(os.path.split(os.path.abspath(__file__))[0])[0])
 import myvariant
 sys.stderr.write('"myvariant {0}" loaded from "{1}"\n'.format(myvariant.__version__, myvariant.__file__))
@@ -57,7 +66,7 @@ class TestMyVariantPy(unittest.TestCase):
                          'chr20:g.1234569_1234570insT')
 
     def test_metadata(self):
-        meta = self.mv.metadata
+        meta = self.mv.metadata()
         self.assertTrue("stats" in meta)
         self.assertTrue("total" in meta['stats'])
 
@@ -204,40 +213,88 @@ class TestMyVariantPy(unittest.TestCase):
         self.assertTrue('clinvar' in fields.keys())
 
     def test_caching(self):
-        pre_cache_r = self.mv.getvariant("chr9:g.107620835G>A")
-        self.assertFalse(pre_cache_r['_from_cache'])
+        if not caching_avail:
+            from nose.plugins.skip import SkipTest
+            raise SkipTest
+
+        def _getvariant():
+            return self.mv.getvariant("chr9:g.107620835G>A")
+
+        def _getvariants():
+            return self.mv.getvariants(["chr9:g.107620835G>A", "chr1:g.876664G>A"])
+
+        def _query():
+            return self.mv.query("dbsnp.rsid:rs58991260")
+
+        def _querymany():
+            return self.mv.querymany(['rs58991260', 'rs2500'], scopes='dbsnp.rsid')
+
+        def _cache_request(f):
+            current_stdout = sys.stdout
+            try:
+                out = StringIO()
+                sys.stdout = out
+                r = f()
+                output = out.getvalue().strip()              
+            finally:
+                sys.stdout = current_stdout
+
+            return ('Returning cached result' in output, r)
+
+        from_cache, pre_cache_r = _cache_request(_getvariant)
+        self.assertFalse(from_cache)
         
         self.mv.set_caching('mvc')
-        self.assertTrue(os.path.exists('mvc.sqlite'))
-
-        cache_fill_r = self.mv.getvariant("chr9:g.107620835G>A")
-        self.assertFalse(cache_fill_r['_from_cache'])
         
-        cached_r = self.mv.getvariant("chr9:g.107620835G>A")
-        self.assertTrue(cached_r['_from_cache'])
+        # populate cache
+        from_cache, cache_fill_r = _cache_request(_getvariant)
+        self.assertTrue(os.path.exists('mvc.sqlite'))
+        self.assertFalse(from_cache)
+        # is it from the cache?
+        from_cache, cached_r = _cache_request(_getvariant)
+        self.assertTrue(from_cache)
         
         self.mv.stop_caching()
-        
-        post_cache_r = self.mv.getvariant("chr9:g.107620835G>A")
-        self.assertFalse(post_cache_r['_from_cache'])
+        # same query should be live - not cached
+        from_cache, post_cache_r = _cache_request(_getvariant)
+        self.assertFalse(from_cache)
 
         self.mv.set_caching('mvc')
-
-        recached_r = self.mv.getvariant("chr9:g.107620835G>A")
-        self.assertTrue(recached_r['_from_cache'])
+        # same query should still be sourced from cache
+        from_cache, recached_r = _cache_request(_getvariant)
+        self.assertTrue(from_cache)
 
         self.mv.clear_cache()
+        # cache was cleared, same query should be live
+        from_cache, clear_cached_r = _cache_request(_getvariant)
+        self.assertFalse(from_cache)
 
-        clear_cached_r = self.mv.getvariant("chr9:g.107620835G>A")
-        self.assertFalse(clear_cached_r['_from_cache'])
+        # all requests should be identical
+        self.assertTrue(all([x == pre_cache_r for x in 
+            [pre_cache_r, cache_fill_r, cached_r, post_cache_r, recached_r, clear_cached_r]]))
+
+        # test getvariants POST caching
+        from_cache, first_getvariants_r = _cache_request(_getvariants)
+        self.assertFalse(from_cache)
+        # should be from cache this time
+        from_cache, second_getvariants_r = _cache_request(_getvariants)
+        self.assertTrue(from_cache)
+
+        # test query GET caching
+        from_cache, first_query_r = _cache_request(_query)
+        self.assertFalse(from_cache)
+        # should be from cache this time
+        from_cache, second_query_r = _cache_request(_query)
+        self.assertTrue(from_cache)
+
+        # test querymany POST caching
+        from_cache, first_querymany_r = _cache_request(_querymany)
+        self.assertFalse(from_cache)
+        # should be from cache this time
+        from_cache, second_querymany_r = _cache_request(_querymany)
+        self.assertTrue(from_cache)
 
         self.mv.stop_caching()
-
-        res = [pre_cache_r, cache_fill_r, cached_r, post_cache_r, recached_r, clear_cached_r]
-        for d in res:
-            d.pop('_from_cache')
-
-        self.assertTrue(all([x == res[0] for x in res]))
 
         os.remove('mvc.sqlite')
 
