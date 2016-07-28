@@ -263,7 +263,7 @@ class MyVariantInfo:
         return_raw = params.pop('return_raw', False)
         headers = {'user-agent': "Python-requests_myvariant.py/%s (gzip)" % requests.__version__}
         res = requests.get(url, params=params, headers=headers)
-        from_cache = vars(res).get('from_cache', False)
+        from_cache = getattr(res, 'from_cache', False)
         if debug:
             return from_cache, res
         if none_on_404 and res.status_code == 404:
@@ -281,7 +281,7 @@ class MyVariantInfo:
         headers = {'content-type': 'application/x-www-form-urlencoded',
                    'user-agent': "Python-requests_myvariant.py/%s (gzip)" % requests.__version__}
         res = requests.post(url, data=params, headers=headers)
-        from_cache = vars(res).get('from_cache', False)
+        from_cache = getattr(res, 'from_cache', False)
         if self.raise_for_status:
             # raise requests.exceptions.HTTPError if not 200
             res.raise_for_status()
@@ -308,9 +308,9 @@ class MyVariantInfo:
             if verbose:
                 print("querying {0}-{1}...".format(i+1, min(i+step, len(query_li))), end="")
             query_result = query_fn(query_li[i:i+step], **fn_kwargs)
-
+            
             yield query_result
-
+            
             if verbose:
                 print("done.")
             if not is_last_loop and self.delay:
@@ -360,9 +360,9 @@ class MyVariantInfo:
             **cache_db** is the path to the local sqlite cache database.'''
         if caching_avail:
             requests_cache.install_cache(cache_name=cache_db, allowable_methods=('GET', 'POST'), **kwargs)
+            self._cached = True
             if verbose:
                 print('[ Future queries will be cached in "{0}" ]'.format(os.path.abspath(cache_db + '.sqlite')))
-            self._cached = True
         else:
             print("Error: The requests_cache python module is required to use request caching.")
             print("See - https://requests-cache.readthedocs.io/en/latest/user_guide.html#installation")
