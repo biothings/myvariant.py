@@ -3,6 +3,7 @@ Python Client for MyVariant.Info services
 '''
 from __future__ import print_function
 import sys
+import os
 import time
 from itertools import islice
 from collections import Iterable
@@ -258,38 +259,36 @@ class MyVariantInfo:
         return df
 
     def _get(self, url, params={}, none_on_404=False, verbose=True):
-        debug = params.pop('debug_get', False)
+        debug = params.pop('debug', False)
         return_raw = params.pop('return_raw', False)
         headers = {'user-agent': "Python-requests_myvariant.py/%s (gzip)" % requests.__version__}
         res = requests.get(url, params=params, headers=headers)
+        from_cache = vars(res).get('from_cache', False)
         if debug:
-            return res
+            return from_cache, res
         if none_on_404 and res.status_code == 404:
-            return None
+            return from_cache, None
         if self.raise_for_status:
             # raise requests.exceptions.HTTPError if not 200
             res.raise_for_status()
         if return_raw:
-            return res.text
+            return from_cache, res.text
         ret = res.json()
-        if verbose and self._cached and vars(res).get('from_cache', False):
-            print('\nReturning cached result for "{}".'.format(url))
-        return ret
+        return from_cache, ret
 
     def _post(self, url, params, verbose=True):
         return_raw = params.pop('return_raw', False)
         headers = {'content-type': 'application/x-www-form-urlencoded',
                    'user-agent': "Python-requests_myvariant.py/%s (gzip)" % requests.__version__}
         res = requests.post(url, data=params, headers=headers)
+        from_cache = vars(res).get('from_cache', False)
         if self.raise_for_status:
             # raise requests.exceptions.HTTPError if not 200
             res.raise_for_status()
         if return_raw:
-            return res
+            return from_cache, res
         ret = res.json()
-        if verbose and self._cached and vars(res).get('from_cache', False):
-            print('\nReturning cached result for "{}".'.format(url))
-        return ret
+        return from_cache, ret
 
     def _format_list(self, a_list, sep=','):
         if isinstance(a_list, (list, tuple)):
@@ -328,12 +327,18 @@ class MyVariantInfo:
             if verbose:
                 print("querying {0}-{1}...".format(i+1, cnt), end="")
             i = cnt
-            query_result = query_fn(batch, **fn_kwargs)
+            from_cache, query_result = query_fn(batch, **fn_kwargs)
             yield query_result
             if verbose:
-                print("done.")
+                cache_str = " {0}".format(self._from_cache_notification) if from_cache else ""
+                print("done.{0}".format(cache_str))
             if self.delay:
                 time.sleep(self.delay)
+
+    @property
+    def _from_cache_notification(self):
+        ''' Notification to alert user that a cached result is being returned.'''
+        return "[ from cache ]"
 
     def metadata(self, verbose=True, **kwargs):
         '''Return a dictionary of MyVariant.info metadata.
@@ -344,14 +349,19 @@ class MyVariantInfo:
 
         '''
         _url = self.url+'/metadata'
-        return self._get(_url, params=kwargs, verbose=verbose)
+        from_cache, ret = self._get(_url, params=kwargs, verbose=verbose)
+        if verbose and from_cache:
+            print(self._from_cache_notification)
+        return ret
 
-    def set_caching(self, cache_db='myvariant_cache', **kwargs):
+    def set_caching(self, cache_db='myvariant_cache', verbose=True, **kwargs):
         ''' Installs a local cache for all requests.
 
             **cache_db** is the path to the local sqlite cache database.'''
         if caching_avail:
             requests_cache.install_cache(cache_name=cache_db, allowable_methods=('GET', 'POST'), **kwargs)
+            if verbose:
+                print('[ Future queries will be cached in "{0}" ]'.format(os.path.abspath(cache_db + '.sqlite')))
             self._cached = True
         else:
             print("Error: The requests_cache python module is required to use request caching.")
@@ -393,11 +403,13 @@ class MyVariantInfo:
             params = {'search': search_term}
         else:
             params = {}
-        ret = self._get(_url, params=params, verbose=verbose)
+        from_cache, ret = self._get(_url, params=params, verbose=verbose)
         for (k, v) in ret.items():
             # Get rid of the notes column information
             if "notes" in v:
                 del v['notes']
+        if verbose and from_cache:
+            print(self._from_cache_notification)
         return ret
 
     def getvariant(self, vid, fields=None, **kwargs):
@@ -428,7 +440,10 @@ class MyVariantInfo:
         if fields:
             kwargs['fields'] = self._format_list(fields)
         _url = self.url + '/variant/' + str(vid)
-        return self._get(_url, kwargs, none_on_404=True, verbose=verbose)
+        from_cache, ret = self._get(_url, kwargs, none_on_404=True, verbose=verbose)
+        if verbose and from_cache:
+            print(self._from_cache_notification)
+        return ret
 
     def _getvariants_inner(self, vids, verbose=True, **kwargs):
         _kwargs = {'ids': self._format_list(vids)}
@@ -563,7 +578,9 @@ class MyVariantInfo:
         elif dataframe != 2:
             dataframe = None
         _url = self.url + '/query'
-        out = self._get(_url, kwargs, verbose=verbose)
+        from_cache, out = self._get(_url, kwargs, verbose=verbose)
+        if verbose and from_cache:
+            print(self._from_cache_notification)
         if dataframe:
             out = self._dataframe(out, dataframe, df_index=False)
         return out
@@ -577,10 +594,10 @@ class MyVariantInfo:
             if caching_avail and self._cached:
                 self._cached = False
                 with requests_cache.disabled():
-                    ret = self._get(_url, params=kwargs, verbose=verbose)
+                    from_cache, ret = self._get(_url, params=kwargs, verbose=verbose)
                 self._cached = True
             else:
-                ret = self._get(_url, params=kwargs, verbose=verbose)
+                from_cache, ret = self._get(_url, params=kwargs, verbose=verbose)
             return ret
         batch = _batch()
         if verbose:

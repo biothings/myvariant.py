@@ -20,11 +20,10 @@ sys.path.insert(0, os.path.split(os.path.split(os.path.abspath(__file__))[0])[0]
 import myvariant
 sys.stderr.write('"myvariant {0}" loaded from "{1}"\n'.format(myvariant.__version__, myvariant.__file__))
 
-
 class TestMyVariantPy(unittest.TestCase):
 
     def setUp(self):
-        self.mv = myvariant.MyVariantInfo()
+        self.mv = myvariant.MyVariantInfo('http://localhost:8000/v1')
         self.query_list1 = [
             'chr1:g.866422C>T',
             'chr1:g.876664G>A',
@@ -239,7 +238,7 @@ class TestMyVariantPy(unittest.TestCase):
             finally:
                 sys.stdout = current_stdout
 
-            return ('Returning cached result' in output, r)
+            return ('[ from cache ]' in output, r)
 
         from_cache, pre_cache_r = _cache_request(_getvariant)
         self.assertFalse(from_cache)
