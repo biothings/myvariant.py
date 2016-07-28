@@ -451,6 +451,12 @@ class MyVariantInfo:
         _url = self.url + '/variant/'
         return self._post(_url, _kwargs, verbose=verbose)
 
+    def _variants_generator(self, query_fn, vids, verbose=True, **kwargs):
+        ''' Convenience function to yield a batch of hits one at a yime. '''
+        for hits in self._repeated_query(query_fn, vids, verbose=verbose):
+            for hit in hits:
+                yield hit
+
     def getvariants(self, vids, fields=None, **kwargs):
         '''Return the list of variant annotation objects for the given list of hgvs-base varaint ids.
         This is a wrapper for POST query of "/variant" service.
@@ -461,6 +467,7 @@ class MyVariantInfo:
                        If not provided or **fields="all"**, all available fields
                        are returned. See `here <http://docs.myvariant.info/en/latest/doc/data.html#available-fields>`_
                        for all available fields.
+        :param generator:  if True, will yield the results in a generator.
         :param as_dataframe: if True or 1 or 2, return object as DataFrame (requires Pandas).
                                   True or 1: using json_normalize
                                   2        : using DataFrame.from_dict
@@ -505,6 +512,7 @@ class MyVariantInfo:
         verbose = kwargs.pop('verbose', True)
         dataframe = kwargs.pop('as_dataframe', None)
         df_index = kwargs.pop('df_index', True)
+        generator = kwargs.pop('generator', False)
         if dataframe in [True, 1]:
             dataframe = 1
         elif dataframe != 2:
@@ -514,6 +522,8 @@ class MyVariantInfo:
             dataframe = None
 
         query_fn = lambda vids: self._getvariants_inner(vids, verbose=verbose, **kwargs)
+        if generator:
+            return self._variants_generator(query_fn, vids, verbose=verbose, **kwargs)
         out = []
         for hits in self._repeated_query(query_fn, vids, verbose=verbose):
             if return_raw:
