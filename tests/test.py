@@ -23,7 +23,7 @@ sys.stderr.write('"myvariant {0}" loaded from "{1}"\n'.format(myvariant.__versio
 class TestMyVariantPy(unittest.TestCase):
 
     def setUp(self):
-        self.mv = myvariant.MyVariantInfo('http://localhost:8000/v1')
+        self.mv = myvariant.MyVariantInfo()
         self.query_list1 = [
             'chr1:g.866422C>T',
             'chr1:g.876664G>A',
