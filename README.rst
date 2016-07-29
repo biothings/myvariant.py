@@ -1,3 +1,6 @@
+.. image:: https://badge.fury.io/py/myvariant.svg
+    :target: https://pypi.python.org/pypi/myvariant
+
 Intro
 =====
 
