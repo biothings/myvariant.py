@@ -45,7 +45,7 @@ Version history
 Tutorial
 =========
 
-.. * 'ID mapping'_
+    `Access ClinVar Data from MyVariant.info Services <https://cdn.rawgit.com/SuLab/myvariant.info/master/docs/ipynb/myvariant_clinvar_demo.html>`_ (the raw ipynb file is `here <https://raw.githubusercontent.com/SuLab/myvariant.info/master/docs/ipynb/myvariant_clinvar_demo.ipynb>`_)
 
 TODO
 
