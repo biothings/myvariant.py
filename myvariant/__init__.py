@@ -232,7 +232,9 @@ class MyVariantInfo:
         #   but not for 404 on getvariant
         #   set to False to surpress the exceptions.
         self.raise_for_status = True
+        self.default_user_agent = "myvariant.py/%s python-requests/%s" % (__version__, requests.__version__)
         self._cached = False
+
 
     def _dataframe(self, var_obj, dataframe, df_index=True):
         """
@@ -261,7 +263,7 @@ class MyVariantInfo:
     def _get(self, url, params={}, none_on_404=False, verbose=True):
         debug = params.pop('debug', False)
         return_raw = params.pop('return_raw', False)
-        headers = {'user-agent': "myvariant.py/%s python-requests/%s" % (__version__, requests.__version__)}
+        headers = {'user-agent': self.default_user_agent}
         res = requests.get(url, params=params, headers=headers)
         from_cache = getattr(res, 'from_cache', False)
         if debug:
@@ -279,7 +281,7 @@ class MyVariantInfo:
     def _post(self, url, params, verbose=True):
         return_raw = params.pop('return_raw', False)
         headers = {'content-type': 'application/x-www-form-urlencoded',
-                   'user-agent': "myvariant.py/%s python-requests/%s" % (__version__, requests.__version__)}
+                   'user-agent': self.default_user_agent}
         res = requests.post(url, data=params, headers=headers)
         from_cache = getattr(res, 'from_cache', False)
         if self.raise_for_status:
