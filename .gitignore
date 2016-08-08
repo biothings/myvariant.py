@@ -11,5 +11,6 @@
 # temp files
 docs/_build
 tests/.noseids
+/.tox
 
 # IDEs
