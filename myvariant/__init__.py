@@ -22,7 +22,7 @@ try:
 except:
     caching_avail = False
 
-__version__ = '0.2.0'
+__version__ = '0.3.0'
 
 if sys.version_info[0] == 3:
     str_types = str
@@ -308,9 +308,9 @@ class MyVariantInfo:
             if verbose:
                 print("querying {0}-{1}...".format(i+1, min(i+step, len(query_li))), end="")
             query_result = query_fn(query_li[i:i+step], **fn_kwargs)
-            
+
             yield query_result
-            
+
             if verbose:
                 print("done.")
             if not is_last_loop and self.delay:

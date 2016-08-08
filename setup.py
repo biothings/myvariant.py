@@ -8,7 +8,7 @@ def read(fname):
 
 setup(
     name="myvariant",
-    version="0.2.0",
+    version="0.3.0",
     author="Chunlei Wu, Cyrus Afrasiabi",
     author_email="cwu@scripps.edu",
     description="Python Client for MyVariant.Info services.",
