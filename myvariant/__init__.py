@@ -613,7 +613,7 @@ class MyVariantInfo:
             return ret
         batch = _batch()
         if verbose:
-            print("Fetching {} variant(s) . . .".format(batch['total']))
+            print("Fetching {0} variant(s) . . .".format(batch['total']))
         for key in ['q', 'fetch_all']:
             kwargs.pop(key)
         while not batch.get('error', '').startswith('No results to return.'):
