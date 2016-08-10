@@ -1,6 +1,12 @@
 .. image:: https://badge.fury.io/py/myvariant.svg
     :target: https://pypi.python.org/pypi/myvariant
 
+.. image:: https://img.shields.io/pypi/pyversions/myvariant.svg
+    :target: https://pypi.python.org/pypi/myvariant
+
+.. image:: https://img.shields.io/pypi/format/myvariant.svg
+    :target: https://pypi.python.org/pypi/myvariant
+
 Intro
 =====
 
