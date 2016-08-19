@@ -1,7 +1,10 @@
+v0.3.1 (2016/08/19):
+    Changed "generator" parameter of getvariants method to "as_generator", just for consistency.
+
 v0.3.0 (2016/08/09):
     Added caching functions for all query types except "fetch_all" if requests-cache is installed.  Can turn request caching on with set_caching(), off with stop_caching().  The cache can be cleared with clear_cache().
     Make "fetch_all" compatible with Elasticsearch v2.x scroll changes.
-    Added a "generator" option to getvariants (default False).   When True, a generator to all results is returned rather than a list of all results.  This requires much less memory for very large queries (eg vcf file annotation).
+    Added a "generator" parameter to getvariants (default False).   When True, a generator to all results is returned rather than a list of all results.  This requires much less memory for very large queries (eg vcf file annotation).
 
 v0.2.0 (2015/10/28):
     return None when input vid does not exist for getvariant method.
