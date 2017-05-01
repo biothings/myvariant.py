@@ -14,7 +14,7 @@ setup(
     description="Python Client for MyVariant.Info services.",
     license="BSD",
     keywords="biology variant annotation web service client api myvariant",
-    url="https://github.com/sulab/myvariant.py",
+    url="https://github.com/biothings/myvariant.py",
     packages=['myvariant'],
     long_description=read('README.rst'),
     classifiers=[
