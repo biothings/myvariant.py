@@ -42,12 +42,12 @@ Installation
     Option 3
           install the latest code directly from the repository::
 
-            pip install -e git+https://github.com/sulab/myvariant.py
+            pip install -e git+https://github.com/biothings/myvariant.py
 
 Version history
 ===============
 
-    `CHANGES.txt <https://raw.githubusercontent.com/sulab/myvariant.py/master/CHANGES.txt>`_
+    `CHANGES.txt <https://raw.githubusercontent.com/biothings/myvariant.py/master/CHANGES.txt>`_
 
 Tutorial
 =========
