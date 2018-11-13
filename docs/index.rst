@@ -66,6 +66,7 @@ API
 .. autofunction:: format_hgvs
 .. autoclass:: MyVariantInfo
     :members:
+    :inherited-members:
 
 
 Indices and tables
