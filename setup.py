@@ -8,8 +8,8 @@ def read(fname):
 
 setup(
     name="myvariant",
-    version="0.3.1",
-    author="Chunlei Wu, Cyrus Afrasiabi",
+    version="1.0.0",
+    author="Chunlei Wu, Cyrus Afrasiabi, Sebastien Lelong",
     author_email="cwu@scripps.edu",
     description="Python Client for MyVariant.Info services.",
     license="BSD",
@@ -20,12 +20,13 @@ setup(
     classifiers=[
         "Programming Language :: Python",
         "Programming Language :: Python :: 2",
-        "Programming Language :: Python :: 2.6",
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.5",
-        "Development Status :: 4 - Beta",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Development Status :: 5 - Production/Stable",
         "License :: OSI Approved :: BSD License",
         "Operating System :: POSIX",
         "Operating System :: MacOS :: MacOS X",
@@ -37,6 +38,6 @@ setup(
         "Topic :: Scientific/Engineering :: Bio-Informatics",
     ],
     install_requires=[
-        'biothings_client'
+        'biothings_client>=0.2.0'
     ],
 )
