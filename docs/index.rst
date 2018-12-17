@@ -5,12 +5,38 @@
 
 
 .. _MyVariant.Info: http://myvariant.info
-.. _requests: https://pypi.python.org/pypi/requests
+.. _biothings_client: https://pypi.org/project/biothings-client/
+.. _myvariant: https://pypi.org/project/myvariant/
 
 Welcome to MyVariant.py's documentation!
 ========================================
 
-MyVariant.Info_ provides simple-to-use REST web services to query/retrieve variant annotation data. It's designed with simplicity and performance emphasized. *myvariant*, is an easy-to-use Python wrapper to access MyVariant.Info_ services.
+MyVariant.Info_ provides simple-to-use REST web services to query/retrieve variant annotation data.
+It's designed with simplicity and performance emphasized. *myvariant*, is an easy-to-use Python wrapper
+to access MyVariant.Info_ services.
+
+.. Note::
+    As of v1.0.0, myvariant_ Python package is now a thin wrapper of underlying biothings_client_ package,
+    a universal Python client for all `BioThings APIs <http://biothings.io>`_, including MyVariant.info_.
+    The installation of myvariant_ will install biothings_client_ automatically. The following code snippets
+    are essentially equivalent:
+
+    * Continue using myvariant_ package
+
+        .. code-block:: python
+
+            In [1]: import myvariant
+            In [2]: mv = myvariant.MyVariantInfo()
+
+    * Use biothings_client_ package directly
+
+        .. code-block:: python
+
+            In [1]: from biothings_client import get_client
+            In [2]: mv = get_client('variant')
+
+    After that, the use of ``mv`` instance is exactly the same.
+
 
 .. toctree::
    :maxdepth: 2
@@ -18,13 +44,18 @@ MyVariant.Info_ provides simple-to-use REST web services to query/retrieve varia
 
 Requirements
 ============
-    python >=2.6 (including python3)
 
-    requests_ (install using "pip install requests")
+    python >=2.7 (including python3)
+
+    (Python 2.6 might still work, not it's not supported any more since v1.0.0)
+
+    biothings_client_ (>=0.2.0, install using "pip install biothings_client")
 
 Optional dependencies
 ======================
-    `pandas <http://pandas.pydata.org>`_ (install using "pip install pandas") is required for returning a list of gene objects as `DataFrame <http://pandas.pydata.org/pandas-docs/stable/dsintro.html#dataframe>`_.
+
+    `pandas <http://pandas.pydata.org>`_ (install using "pip install pandas") is required for returning a list
+    of gene objects as `DataFrame <http://pandas.pydata.org/pandas-docs/stable/dsintro.html#dataframe>`_.
 
 Installation
 =============
@@ -52,10 +83,7 @@ Version history
 Tutorial
 =========
 
-.. * `ID mapping using mygene module in Python <http://nbviewer.ipython.org/6771106>`_
-
-TODO
-
+    `Access ClinVar Data from MyVariant.info Services <https://cdn.rawgit.com/biothings/myvariant.info/master/docs/ipynb/myvariant_clinvar_demo.html>`_ (the raw ipynb file is `here <https://raw.githubusercontent.com/biothings/myvariant.info/master/docs/ipynb/myvariant_clinvar_demo.ipynb>`_)
 
 API
 ======

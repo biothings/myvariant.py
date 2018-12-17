@@ -53,7 +53,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'MyVariant.py'
-copyright = '2015, Chunlei Wu'
+copyright = '2016-2019, A BioThings Project'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
