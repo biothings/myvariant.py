@@ -1,4 +1,4 @@
-v1.0.0 (2018/12/18):
+v1.0.0 (2018/12/17):
     MyVariant.py client is now a thin wrapper of underlying biothings_client.py package, a universal Python client for all BioThings APIs, including MyVariant.info.
 
 v0.3.1 (2016/08/19):
