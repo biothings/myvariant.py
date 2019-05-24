@@ -1,7 +1,7 @@
 '''
 Python Client for MyVariant.Info services
 '''
-from biothings_client import get_client
+from biothings_client import get_client, alwayslist
 
 __version__ = '1.0.0'
 
