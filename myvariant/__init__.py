@@ -12,7 +12,9 @@ class MyVariantInfo(get_client('variant', instance=False)):
         >>> mv = MyVariantInfo()
 
     '''
-    pass
+    def __init__(self):
+        super(MyVariantInfo, self).__init__()
+        self.default_user_agent += ' myvariant.py/' + __version__
 
 def format_hgvs(chrom, pos, ref, alt):
     """:py:func:`format_hgvs` helper function is now moved into :py:class:`MyVariantInfo` class
