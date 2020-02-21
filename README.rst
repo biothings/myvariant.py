@@ -1,3 +1,6 @@
+.. image:: https://pepy.tech/badge/myvariant
+    :target: https://pepy.tech/project/myvariant
+    
 .. image:: https://badge.fury.io/py/myvariant.svg
     :target: https://pypi.org/project/myvariant/
 
